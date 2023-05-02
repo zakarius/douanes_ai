@@ -1,0 +1,4 @@
+# cache __pycache__ files
+__pycache__/
+.chromadb_cache/
+data/*.json
