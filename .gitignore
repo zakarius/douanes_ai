@@ -2,3 +2,4 @@
 __pycache__/
 .chromadb_cache/
 data/*.json
+config/

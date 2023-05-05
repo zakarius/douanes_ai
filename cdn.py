@@ -5,7 +5,7 @@ import pandas as pd
 from gpt3 import COMPLETIONS_MODEL, SEPARATOR, _compute_or_load_doc_embeddings, count_tokens, separator_len
 from chromadb.api import Where, WhereDocument, QueryResult, Collection
 from chromadb.api.types import Embedding
-from main import chromadb
+from vectorstore import chromadb
 from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 
 
@@ -106,18 +106,25 @@ class CodesDesDouanes():
     ARTICLES_DF = "articles"
     METADATA_DF = "metadata"
 
-    api_key: str
+    _api_key: str | None = None
 
     data_frames_path: str = "data/"
     embeddings_path: str = "embeddings/"
 
     embedding_functions: OpenAIEmbeddingFunction
 
-    def __init__(self, api_key: str):
+    def __init__(self):
         super().__init__()
         self.data_frames_path = __file__.replace("cdn.py", "")+"data/"
         self.embeddings_path = __file__.replace("cdn.py", "")+"embeddings/"
-        self.api_key = api_key
+    
+    @property
+    def api_key(self) -> str:
+        return self._api_key
+    
+    @api_key.setter
+    def api_key(self, api_key: str):
+        self._api_key = api_key
         self.embedding_functions = OpenAIEmbeddingFunction(api_key)
 
     def df(self, data: str = "articles") -> pd.DataFrame:
@@ -297,12 +304,16 @@ class CodesDesDouanes():
     def metadata_df(self):
         return self.df(self.METADATA_DF)
 
+
     def collection(self, name: str) -> Collection:
-        collection = chromadb.get_or_create_collection(
-            name=name,
-            embedding_function=self.embedding_functions,
-        )
-        if collection.count() == 0:
+        try:
+            collection =  chromadb.get_collection(name, embedding_function=self.embedding_functions,)
+        except :
+            collection = chromadb.create_collection(
+                name=name,
+                embedding_function=self.embedding_functions,
+                get_or_create=True,
+            )
             df = self.df(name)
             embeddings = self.load_embeddings(name, _df=df)
             collection.add(
@@ -330,7 +341,7 @@ class CodesDesDouanes():
 
     def construct_prompt(self, question: str, n_result: int = 5
                          ) -> str:
-        header_prefix = """Reponds à la question de façon la plus détaillée possibe à partir des sources suivantes (tires, chaitres, sections, sous_sections, parties, aricles) du Code des Douanes Nationle du Togo (CDN) et du code des douanes communautaire de la CEDEAO (CDC), en precisant les sources utiisés dans la réponse en utilisant les mots comme : "selon, conformememnt, l'article _ stipule, , ..." au debut ou à la fin des phrases. priorise les sources du CDN sur celles du CDC. Evite à tout prix de te repeter. Ne fabrique pas de reponse si les sources ne le permettent pas. \n\n"""
+        header_prefix = """AGENT0 est un douanier Togolais. SuperDouanier est un assistant basé sur GPT3. qui repponds de facon précise, concise  et complete aux questions douanières en se basant uniquement sur le Codes Des Douanes Nationale du Togo (CDN) et le Codes Des Douanes Communautaire de la CEDEAO (CDC), dans le style académique. SuperDouanier est instruit par l'inspecteur des douanes Bilali ZAKARI disponible à l'adresse bilal@zakarius.com et sur le +22892108274 pour toute information complementaire. SuperDouanier precise les sources dans sa réponse, priorise les sources du CDN sur celles du CDC, evite à tout prix de se repeter dans sa réponse et ne fabrique pas de reponse si les textes douanier ne le permettent pas. Si la demande de AGENT0 ne demande pas de generer des question, SuperDouanier ne le fais pas.\n\n"""
 
         query_embedding = self.embedding_functions([question])[0]
 
@@ -340,7 +351,7 @@ class CodesDesDouanes():
 
         MAX_PROMPT_LEN = 2024 - \
             count_tokens(header_prefix) - \
-            count_tokens("\n\n Question: ""\n Reponse:")
+            count_tokens("\n\n AGENT0: ""\n SuperDouanier:")
 
         for source in sources:
             chosen_items = []
@@ -366,14 +377,15 @@ class CodesDesDouanes():
                 header += f"\n\n{source}".upper()
                 header += "\n" + "".join(chosen_items)
 
-        return header_prefix + header + "\n\n Question: " + question + "\n Reponse:"
+        return header_prefix + header + "\n\n AGENT0: " + question + "\n SuperDouanier:"
 
-    def answer_query_with_context(self,
-                                  question: str,
-                                  show_prompt: bool = False,
-                                  prompt_only: bool = False,
-                                  n_result: int = 5,
-                                  ) -> str:
+    def answer(self,
+                question: str,
+                show_prompt: bool = False,
+                prompt_only: bool = False,
+                n_result: int = 5,
+                stream: bool = False,
+                ):
         prompt = self.construct_prompt(
             question,
             n_result=n_result,
@@ -387,23 +399,12 @@ class CodesDesDouanes():
         openai.api_key = self.api_key
         response = openai.ChatCompletion.create(
             model=COMPLETIONS_MODEL,
-            temperature=0.1,
+            temperature=0,
             messages=[{"role": "user", "content": prompt}],
+            stream=stream,
+            max_tokens= 3000- count_tokens(prompt),
         )
-        return response["choices"][0]["message"]["content"]
-
-    def run(self, question: str, verbose: bool = False) -> str:
-        return self.answer_query_with_context(question, show_prompt=verbose)
-
-    async def stream(self, question: str):
-        prompt = self.construct_prompt(question)
-        openai.api_key = self.api_key
-        response = openai.ChatCompletion.create(
-            model=COMPLETIONS_MODEL,
-            temperature=0.1,
-            messages=[{"role": "user", "content": prompt}],
-            stream=True
-        )
-        for chunk in response:
-            message = chunk['choices'][0]['delta']
-            yield message.get("content", "")
+        if(stream):
+            return response
+        else:
+            return response["choices"][0]["message"]["content"]
