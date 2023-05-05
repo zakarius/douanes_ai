@@ -1,6 +1,5 @@
 from fastapi import  FastAPI
 from fastapi.responses import PlainTextResponse, JSONResponse
-from fastapi.security.oauth2 import OAuth2PasswordBearer
 from sse_starlette.sse import EventSourceResponse
 
 # Assistant classs
@@ -56,3 +55,5 @@ def get_similar_content(question: str, api_key: str , collection: str = "article
     return JSONResponse(
         content=[item.replace("##LINE##", "\n") for item in results["documents"][0]],
     )
+
+
