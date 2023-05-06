@@ -1,0 +1,13 @@
+[Unit]
+Description=Gunicorn instance to serve SuperDouanier API
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/root/douanes-ai/
+Environment="PATH=/root/venvs/ai/bin"
+ExecStart=/root/venvs/ai/bin/gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app
+
+[Install]
+WantedBy=multi-user.target

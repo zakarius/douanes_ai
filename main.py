@@ -1,7 +1,7 @@
 from fastapi import  FastAPI
 from fastapi.responses import PlainTextResponse, JSONResponse
 from sse_starlette.sse import EventSourceResponse
-
+import uvicorn
 # Assistant classs
 from cdn import CodesDesDouanes
 
@@ -42,8 +42,6 @@ async def answer_to_question( question: str, api_key: str, stream: bool = False,
     else:
         return PlainTextResponse(response, media_type="text/plain")
 
-
-
 @app.get("/cdn/search", response_class=JSONResponse)
 def get_similar_content(question: str, api_key: str , collection: str = "articles",  n_result: int = 5):
     app.api_key = api_key
@@ -57,3 +55,5 @@ def get_similar_content(question: str, api_key: str , collection: str = "article
     )
 
 
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, workers=3)
