@@ -3,3 +3,4 @@ __pycache__/
 .chromadb_cache/
 data/*.json
 config/
+douanes-ai.sock
