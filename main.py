@@ -32,10 +32,10 @@ async def answer_to_question(question: str, api_key: str, stream: bool = False, 
     response = app.cdn.answer(question, stream=stream, prompt_only=prompt_only)
     if stream and not prompt_only:
         def get_message(chunk) -> str:
-            return chunk['choices'][0]['delta'].get(
+            return chunk if openai_message else chunk['choices'][0]['delta'].get(
                 "content", "")
 
-        return EventSourceResponse(response if openai_message else map(get_message, response))
+        return EventSourceResponse(map(get_message, response))
     else:
         return PlainTextResponse(response, media_type="text/plain")
 
