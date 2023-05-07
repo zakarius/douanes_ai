@@ -34,7 +34,7 @@ async def answer_to_question(question: str, api_key: str, stream: bool = False, 
         def get_message(chunk) -> str:
             message: str = chunk['choices'][0]['delta'].get(
                 "content", "")
-            return message.replace(" ", "\u00a0")
+            return message.replace(" ", "\u00a0").replace("\n", "\u0085")
 
         return EventSourceResponse(map(get_message, response))
     else:
