@@ -27,13 +27,14 @@ app = DouanesApi()  # server.app()
 
 
 @app.get("/cdn/answer")
-async def answer_to_question(question: str, api_key: str, stream: bool = False, prompt_only: bool = False, openai_message: bool = False):
+async def answer_to_question(question: str, api_key: str, stream: bool = False, prompt_only: bool = False):
     app.api_key = api_key
     response = app.cdn.answer(question, stream=stream, prompt_only=prompt_only)
     if stream and not prompt_only:
         def get_message(chunk) -> str:
-            return chunk if openai_message else chunk['choices'][0]['delta'].get(
+            message: str = chunk['choices'][0]['delta'].get(
                 "content", "")
+            return message.replace(" ", "\u00a0")
 
         return EventSourceResponse(map(get_message, response))
     else:
