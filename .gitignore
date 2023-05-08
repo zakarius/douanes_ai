@@ -2,5 +2,6 @@
 __pycache__/
 .chromadb_cache/
 data/*.json
+!data/tec_*.json
+data/tec_*_df.json
 config/
-douanes-ai.sock
