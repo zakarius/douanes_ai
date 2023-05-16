@@ -1,13 +1,9 @@
 import json
 import pathlib
-import openai
 import pandas as pd
-from gpt3 import COMPLETIONS_MODEL, SEPARATOR, _compute_or_load_doc_embeddings, count_tokens, separator_len
-from chromadb.api import Where, WhereDocument, QueryResult, Collection
-from chromadb.api.types import Embedding
-from vectorstore import chromadb
+from gpt3 import  SEPARATOR, count_tokens, separator_len
 from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
-
+from vectorstore import BaseDouaneData
 
 def articleTitle(titre: str) -> str:
     return "" if titre == "" else f" ({titre}) "
@@ -96,7 +92,7 @@ def partie_content(row, code):
     return description
 
 
-class CodesDesDouanes():
+class CodesDesDouanes(BaseDouaneData):
     CODES_DF = "codes_des_douanes"
     TITRES_DF = "titres"
     CHAPITRES_DF = "chapitres"
@@ -106,7 +102,8 @@ class CodesDesDouanes():
     ARTICLES_DF = "articles"
     METADATA_DF = "metadata"
 
-    _api_key: str | None = None
+    SUFFIX: str = 'codes_des_douanes'
+
 
     data_frames_path: str = "data/"
     embeddings_path: str = "embeddings/"
@@ -117,15 +114,6 @@ class CodesDesDouanes():
         super().__init__()
         self.data_frames_path = __file__.replace("cdn.py", "")+"data/"
         self.embeddings_path = __file__.replace("cdn.py", "")+"embeddings/"
-    
-    @property
-    def api_key(self) -> str:
-        return self._api_key
-    
-    @api_key.setter
-    def api_key(self, api_key: str):
-        self._api_key = api_key
-        self.embedding_functions = OpenAIEmbeddingFunction(api_key)
 
     def df(self, data: str = "articles") -> pd.DataFrame:
         root: str = self.data_frames_path
@@ -281,17 +269,6 @@ class CodesDesDouanes():
                 df = articles_df
             return df
 
-    def load_embeddings(self, data: str = "articles", _df: pd.DataFrame | None = None):
-        root = f"{self.embeddings_path}{self.CODES_DF}"
-        if _df is None:
-            _df = self.df(data)
-        return _compute_or_load_doc_embeddings(
-            embeddings_path=f"{root}_{data}.json",
-            df=_df,
-            api_key=self.api_key,
-            value_key="content",
-        )
-
     def articles_embeddings(self, _df: pd.DataFrame | None = None):
         return self.load_embeddings("articles", _df=_df)
 
@@ -303,41 +280,6 @@ class CodesDesDouanes():
 
     def metadata_df(self):
         return self.df(self.METADATA_DF)
-
-
-    def collection(self, name: str) -> Collection:
-        try:
-            collection =  chromadb.get_collection(name, embedding_function=self.embedding_functions,)
-        except :
-            collection = chromadb.create_collection(
-                name=name,
-                embedding_function=self.embedding_functions,
-                get_or_create=True,
-            )
-            df = self.df(name)
-            embeddings = self.load_embeddings(name, _df=df)
-            collection.add(
-                ids=[str(index) for index in df.index.values.tolist()],
-                embeddings=[value for (_, value) in embeddings.items()],
-                documents=df.content.values.tolist(),
-                increment_index=True,
-            )
-        return collection
-
-    def search(self,
-               question: str | None = None,
-               query_embeddings: Embedding | None = None,
-               collection: str = "articles", n_result: int = 10,
-               where: Where | None = None,
-               where_document: WhereDocument | None = None,
-               ) -> QueryResult:
-        return self.collection(collection).query(
-            query_embeddings=query_embeddings,
-            query_texts=question if query_embeddings is None else None,
-            n_results=n_result,
-            where=where,
-            where_document=where_document,
-        )
 
     def construct_prompt(self, question: str, n_result: int = 5
                          ) -> str:
@@ -378,33 +320,3 @@ class CodesDesDouanes():
                 header += "\n" + "".join(chosen_items)
 
         return header_prefix + header + "\n\n AGENT0: " + question + "\n SuperDouanier:"
-
-    def answer(self,
-                question: str,
-                show_prompt: bool = False,
-                prompt_only: bool = False,
-                n_result: int = 5,
-                stream: bool = False,
-                ):
-        prompt = self.construct_prompt(
-            question,
-            n_result=n_result,
-        )
-
-        if show_prompt:
-            print(prompt)
-
-        if prompt_only:
-            return prompt
-        openai.api_key = self.api_key
-        response = openai.ChatCompletion.create(
-            model=COMPLETIONS_MODEL,
-            temperature=0,
-            messages=[{"role": "user", "content": prompt}],
-            stream=stream,
-            max_tokens= 3000- count_tokens(prompt),
-        )
-        if(stream):
-            return response
-        else:
-            return response["choices"][0]["message"]["content"]

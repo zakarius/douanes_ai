@@ -1,7 +1,7 @@
 import pandas as pd
-import openai
 import tiktoken
 import numpy as np
+from chromadb.api.types import EmbeddingFunction
 
 
 COMPLETIONS_MODEL = "gpt-3.5-turbo"  # "text-davinci-003"
@@ -26,59 +26,32 @@ def separator_len():
     return count_tokens(SEPARATOR)
 
 
-def load_embeddings(df: pd.DataFrame, exclude_columns: list[str] = ["content"]) -> dict[tuple[str, str], list[float]]:
+def load_embeddings(df: pd.DataFrame, exclude_columns: list[str] = ["content"]):
+    
     max_dim = max([int(c) for c in df.columns if c !=
                   "Unnamed: 0" and c not in exclude_columns])
+    try:
+        return {
+            idx: [row[str(i)] for i in range(max_dim + 1)] for idx, row in df.iterrows()
+        }
+    except :
+        return  {
+            idx: [  row[i] for i in range(max_dim + 1)] for idx, row in df.iterrows()
+        }
+
+def compute_doc_embeddings(df: pd.DataFrame,embedding_function: EmbeddingFunction, value_key: str = "content"):
     return {
-        idx: [r[str(i)] for i in range(max_dim + 1)] for idx, r in df.iterrows()
+      idx:  embedding_function([r[value_key]])[0]  for idx, r in df.iterrows()
     }
 
-
-def get_embedding(text: str, api_key: str, model: str = EMBEDDINGS_MODEL) -> list[float]:
-    openai.api_key = api_key
-    return openai.Embedding.create(
-        model=model,
-        input=text
-    )
-
-
-def get_doc_embedding(text: str, api_key: str) -> list[float]:
-    return get_embedding(text, api_key)
-
-
-def get_query_embedding(text: str, api_key: str) -> list[float]:
-    return get_doc_embedding(text, api_key)
-
-
-def compute_doc_embeddings(df: pd.DataFrame, api_key: str, value_key: str = "content") -> dict[tuple[str, str], list[float]]:
-    embeddings = {}
-    for idx, r in df.iterrows():
-        try:
-            content = r[value_key].replace("\n", " ")
-            embeddings[idx] = get_doc_embedding(content, api_key)
-        except:
-            print(f"Error computing embedding for {idx} : {r.values}")
-            try:
-                content = r[value_key].replace("\n", " ")
-                embeddings[idx] = get_doc_embedding(content, api_key)
-
-            except:
-                print(
-                    f"Error computing embedding for {idx} : {r.values} for the second time")
-                pass
-            pass
-    return embeddings
-
-
-def _compute_or_load_doc_embeddings(embeddings_path: str, df: pd.DataFrame, api_key: str, value_key: str = "content") -> dict[tuple[str, str], list[float]]:
+def _compute_or_load_doc_embeddings(embeddings_path: str, df: pd.DataFrame, embedding_function: EmbeddingFunction, value_key: str = "content"):
     assert embeddings_path.endswith(".json")
-
     try:
         embeddings_df = pd.read_json(embeddings_path, orient='index')
         print(f"Loaded {len(embeddings_df)} embeddings from {embeddings_path}")
         return load_embeddings(embeddings_df)
     except:
-        embeddings = compute_doc_embeddings(df, api_key, value_key)
+        embeddings = compute_doc_embeddings(df, embedding_function, value_key)
         embeddings_df = pd.DataFrame.from_dict(embeddings, orient='index')
         embeddings_df.to_json(embeddings_path, orient='index')
         print(f"Saved {len(embeddings_df)} embeddings to {embeddings_path}")

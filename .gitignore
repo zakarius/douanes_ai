@@ -4,4 +4,6 @@ __pycache__/
 data/*.json
 !data/tec_*.json
 data/tec_*_df.json
+valeur/data/*_df.json
 config/
+.env

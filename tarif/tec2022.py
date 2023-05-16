@@ -1,11 +1,8 @@
-import re
 import pathlib
 import openai
 import pandas as pd
-from gpt3 import COMPLETIONS_MODEL, SEPARATOR, _compute_or_load_doc_embeddings, count_tokens, separator_len
-from chromadb.api import Where, WhereDocument, QueryResult, Collection
-from chromadb.api.types import Embedding
-from vectorstore import chromadb, BaseDouaneData
+from gpt3 import COMPLETIONS_MODEL, count_tokens
+from vectorstore import  BaseDouaneData
 from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 
 
