@@ -61,11 +61,12 @@ class TarifExterieurCommun(BaseDouaneAI):
     SECTIONS_DF = "sections"
     CHAPISTES_DF = "chapitres"
     ITEMS_DF = "items"
+    NOTES_DF = "notes"
     COMMUNAUTE= "communaute"
     DE_LA_COMMUNAUTE = "de la commuanuté"
     ANNEE = ""
     PREFIX = "tec"
-
+    
     BASE_COLLECTION = "all"
 
 
@@ -87,7 +88,9 @@ class TarifExterieurCommun(BaseDouaneAI):
         try:
             return pd.read_json(data_path, orient='index',)
         except:
-            if data == "sections":
+            if data == "notes":
+                _df = self.notes_data
+            elif data == "sections":
                 _df = self.sections_data
                 _df["content"] = _df.apply(lambda row: self._get_section_info(row.number, True), axis=1)
             elif data == "chapitres":
@@ -107,6 +110,7 @@ class TarifExterieurCommun(BaseDouaneAI):
     def df(self, data: str = "all"):
         if data == "all":
             return pd.concat([
+                self._df("notes"),
                 self._df("sections"),
                 self._df("chapitres"),
                 self._df("positions"),
@@ -119,8 +123,11 @@ class TarifExterieurCommun(BaseDouaneAI):
         
         merged_dict = {}
         index = 0
+        for key, value in self.load_embeddings("notes").items():
+            merged_dict[str(key) if index == 0 else str(index)] = value
+            index += 1
         for key, value in self.load_embeddings("sections").items():
-            merged_dict[str(key) if index ==0 else str(index)] = value
+            merged_dict[str(index)] = value
             index += 1
 
         for key, value in self.load_embeddings("chapitres").items():
@@ -132,6 +139,10 @@ class TarifExterieurCommun(BaseDouaneAI):
             index += 1
         return merged_dict
 
+    @property
+    def regles_generales(self):
+        with open(self.data_frames_path+"regles_generales.txt") as f:
+           return  "\n".join(f.readlines())
 
     @property
     def chapitres_data(self) -> pd.DataFrame:
@@ -151,6 +162,20 @@ class TarifExterieurCommun(BaseDouaneAI):
             lambda x: x.replace(".", "").strip())
         _df["nts"] = _df.nts.apply(lambda x: x.replace(".", "").strip())
         return _df
+
+    @property
+    def notes_data(self) -> pd.DataFrame:
+        rg_chunks = split_text_by_char_limit(self.regles_generales, 50)
+        notes_sections = self.sections_data.apply(lambda row : "\n".join([f"Note Section {row.number} {chunk}"  for chunk in   split_text_by_char_limit(row.note, 50)]), axis=1)
+        notes_chapitres = self.chapitres_data.apply(lambda row : "\n".join([f"Note Chapitre {row.number} {chunk}"  for chunk in   split_text_by_char_limit(row.note, 50)]), axis=1)
+        notes: list[str] = [*rg_chunks, *notes_sections.to_list(), *notes_chapitres.to_list()]
+        return pd.DataFrame(
+            data=[note for note in  notes if note.strip() != ""],
+            columns=["content"]
+        )
+        
+
+        
 
     def get_position_items(self, position: str):
         position_items: list[pd.Series] = []
