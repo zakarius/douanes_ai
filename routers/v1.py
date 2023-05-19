@@ -7,10 +7,13 @@ from cdn import CodesDesDouanes
 from tarif.tec2022 import Tec2022
 from utils import return_response
 from valeur.valeur import Valeur, RegimeEconomique
-from . import v2 as V2
+
 
 DEFAULT_API_KEY = dotenv.get_key(".env", "OPENAI_API_KEY")
 
+
+cdn = CodesDesDouanes()
+tec = Tec2022()
 valeur = Valeur()
 regimes = RegimeEconomique()
 
@@ -38,19 +41,15 @@ def get_cst_code_infos(question: str, api_key: str = DEFAULT_API_KEY, stream: bo
     return return_response(response, stream, prompt_only)
 
 @router.get("/tec/info")
-async def get_tec_info(query: str, api_key: str | None = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False, use_gpt4 : bool= False):
-    return await V2.answer_to_question(
-        question=query,
-        douanes_ai=V2.DouanesModelsEnum.TEC_CEDEAO_2022,
-        api_key=api_key,
-        stream=stream,
-        prompt_only=prompt_only,
-        use_gpt4=use_gpt4,
-    )
+def get_tec_info(query: str, api_key: str | None = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False, use_gpt4 : bool= False):
+    valeur.api_key = api_key
+    response = tec.get_info(
+        query, stream=stream, prompt_only=prompt_only or (api_key is None), use_gpt4=use_gpt4)
+    return return_response(response, stream, prompt_only)
+
 
 @router.get("/cdn/answer")
 async def answer_to_question(question: str, api_key: str | None = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False, use_gpt4: bool = False):
-    douanes_ai=V2.DouanesModelsEnum.CDN_TOGO_CEDEAO_2017
     tec_parts = question.split('@TEC:')
     valeur_parts = question.split('@VALEUR')
     regime_parts = question.split("@REGIME")
@@ -64,11 +63,21 @@ async def answer_to_question(question: str, api_key: str | None = DEFAULT_API_KE
     elif len(cst_parts) == 2:
        return get_cst_code_infos(cst_parts[1], api_key=api_key, stream=stream, prompt_only=prompt_only)
     
-    return await V2.answer_to_question(
+
+    cdn.api_key = api_key
+    response = cdn.answer(question, stream=stream, prompt_only=prompt_only)
+    return return_response(response, stream, prompt_only)
+
+
+@router.get("/cdn/search", response_class=JSONResponse)
+def get_similar_content(question: str, api_key: str | None = DEFAULT_API_KEY, collection: str = "articles",  n_result: int = 5):
+    cdn.api_key = api_key
+    results = cdn.search(
         question=question,
-        douanes_ai=douanes_ai,
-        api_key=api_key,
-        stream=stream,
-        prompt_only=prompt_only,
-        use_gpt4=use_gpt4,
+        collection=collection,
+        n_result=n_result,
+    )
+    return JSONResponse(
+        content=[item.replace("##LINE##", "\n")
+                 for item in results["documents"][0]],
     )
