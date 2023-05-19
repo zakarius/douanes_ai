@@ -315,7 +315,7 @@ class CodesDesDouanesNationalEtCommunautaire(CodeDesDouanes):
 
     def __init__(self):
         self.PREFIX = f"cdn_{self.PAYS}_{self.COMMUAUTE}_{self.ANNEE}_"
-        self.pre_prompt = f"""Tu est un agent du service des douanes {self.DU_PAYS}. tu repponds de facon précise, concise  et complete aux questions douanières en se basant uniquement sur le Code Des Douanes Communautaire {self.DE_LA_COMMUNAUTE} (CDC) et le Code des Douanes National {self.DU_PAYS} (CDN)."""
+        self.pre_prompt = f"""Tu est un agent du service des douanes {self.DU_PAYS}. tu repponds de facon précise, concise  et complete aux questions douanières en se basant uniquement sur le Code Des Douanes Communautaire {self.DE_LA_COMMUNAUTE} (CDC) , le Code des Douanes National {self.DU_PAYS} (CDN), les accords de l'OMC sur l'evaluation en douane et l'origine des marchandise, les incotermes,  l'accord creant la ZLECAF et les règles qui la regissent, ..."""
         self.cdn.DU_PAYS = self.DU_PAYS
         self.cdc.DE_LA_COMMUNAUTE = self.DE_LA_COMMUNAUTE
 
