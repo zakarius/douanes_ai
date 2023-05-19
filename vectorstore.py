@@ -1,6 +1,6 @@
 from chromadb.config import Settings
 from chromadb.server.fastapi import FastAPI
-from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction, EmbeddingFunction
 from chromadb.api import Where, WhereDocument, QueryResult, Collection
 from chromadb.api.types import Embedding
 import openai
@@ -35,7 +35,12 @@ class BaseDouaneData():
 
     data_frames_path: str 
     embeddings_path: str 
-    embedding_functions: OpenAIEmbeddingFunction
+    embedding_functions: EmbeddingFunction
+
+    def __init__(self, data_frames_path: str = "data/",  embeddings_path: str = "embeddings/", ):
+        super().__init__()
+        self.data_frames_path = __file__.replace("cdn.py", "")+data_frames_path
+        self.embeddings_path = __file__.replace("cdn.py", "")+ embeddings_path
     
     def df(
         self,
@@ -137,9 +142,6 @@ class BaseDouaneData():
             header += "\n" + "".join(chosen_items)
         
         header+= self.examples
-
-        print(count_tokens(header))
-
         return header_prefix + header + "\n\nAGENT0: " + question + "\nReponse:"
 
 

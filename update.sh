@@ -1,6 +1,3 @@
-source /root/venvs/ai/bin/activate
-pip install -r requirements.txt
-
 
 # Enable the service, if it's already enabled,stop and disable it first
 if [ -f /etc/systemd/system/douanes-ai.service ]; then

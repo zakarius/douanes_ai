@@ -2,8 +2,9 @@
 __pycache__/
 .chromadb_cache/
 data/*.json
-!data/tec_*.json
-data/tec_*_df.json
-valeur/data/*_df.json
+!data/tec_*_df.json
+#data/tec_*_df.json
+valeur/*/*.json
 config/
 .env
+.gpt4all/
