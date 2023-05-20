@@ -19,7 +19,8 @@ class BaseDouaneAI():
 
     pre_prompt = """Tu est un assistant basé sur GPT3 qui reppond de facon précise, concise et complete aux questions douanières en se basant uniquement sur tes connaissance en matière régimes économiques en douanes des marchandises, dans le style académique. Tu te base sur la liste des régimes et codes additionnels contenus dans SYDONIA++. Tu evites à tout prix de se repeter dans sa réponse et ne fabrique pas de reponse si la liste des régimes ne le permet pas.\n\n"""
 
-    examples : str = ""
+    DONNEES_FICIVES: str | None = None
+    EXEMPLES_FICTIFS : str  | None= None
 
     data_frames_path: str 
     embeddings_path: str 
@@ -31,6 +32,9 @@ class BaseDouaneAI():
 
         self.data_frames_path = base + data_frames_path + self.PREFIX
         self.embeddings_path = base + embeddings_path + self.PREFIX 
+        self.DONNEES_FICIVES = "" if self.DONNEES_FICIVES is None else "DONNEES FICTIVES (JUSTE POUR DES EXEMPLES FICTIFS)"+self.DONNEES_FICIVES
+
+        self.EXEMPLES_FICTIFS = "" if self.EXEMPLES_FICTIFS is None else "EXEMPLES FICTIFS"+self.EXEMPLES_FICTIFS
     
     def df(
         self,
@@ -98,7 +102,7 @@ class BaseDouaneAI():
 
     def construct_prompt(self, question: str, n_result: int = 5
                          ) -> str:
-        header_prefix = self.pre_prompt
+        header_prefix = self.pre_prompt + (self.DONNEES_FICIVES or "")
 
         query_embedding = self.embedding_functions([question])[0]
 
@@ -133,7 +137,7 @@ class BaseDouaneAI():
             header += f"\n\n{source}".upper()
             header += "\n" + "".join(chosen_items)
         
-        header+= self.examples
+        header+= self.EXEMPLES_FICTIFS
         return header_prefix + header + "\n\nAGENT0: " + question + "\nReponse:"
 
 
@@ -144,6 +148,7 @@ class BaseDouaneAI():
                n_result: int = 5,
                stream: bool = False,
                completor: str = "open_ai",
+               use_gpt4: bool = False
                ):
         prompt = self.construct_prompt(
             question,
@@ -180,5 +185,13 @@ class BaseDouaneAI():
         stream: bool = False,
         completor: str = "open_ai",
         use_gpt4: bool = False
-        ) -> (str | Generator[Any | list | dict, None, None] | Any | list | dict | None):
-                ...
+        ) :
+               return self.answer(
+                    question=question,
+                    show_prompt=show_prompt,
+                    prompt_only=prompt_only,
+                    n_result=n_result,
+                    stream=stream,
+                    completor=completor,
+                    use_gpt4 =use_gpt4,
+                )

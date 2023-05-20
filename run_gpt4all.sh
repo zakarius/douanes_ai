@@ -1,1 +1,0 @@
-curl https://gpt4all.io/installers/gpt4all-installer-linux.run

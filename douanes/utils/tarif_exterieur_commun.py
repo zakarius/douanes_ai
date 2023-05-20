@@ -65,7 +65,6 @@ class TarifExterieurCommun(BaseDouaneAI):
     COMMUNAUTE= "communaute"
     DE_LA_COMMUNAUTE = "de la commuanuté"
     ANNEE = ""
-    PREFIX = "tec"
     
     BASE_COLLECTION = "all"
 

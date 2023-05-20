@@ -12,7 +12,6 @@ systemctl start douanes-ai.service
 
 
 # Enable the site. if it's already enabled, disable it first
-apt update && apt install -y nginx
 cp douanes-api.conf /etc/nginx/sites-available/
 if [ -f /etc/nginx/sites-enabled/douanes-api.conf ]; then
     rm /etc/nginx/sites-enabled/douanes-api.conf

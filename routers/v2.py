@@ -6,7 +6,7 @@ from fastapi import  APIRouter
 from douanes.monde import *
 from  douanes.afrique import *
 from  douanes.cedeao import CodeDesDouanesCEDEAO2017, TECCedeao2022
-from  douanes.togo import CdnTogoEtCedeao2017, CodeDesDouanesTogo2017
+from  douanes.pays.togo import CdnTogoEtCedeao2017, CodeDesDouanesTogo2017, FicheValeurTogo2022, CodesCSTTogo2023, RegimesTogo2021, RegimesTogo2023
 from douanes.utils import BaseDouaneAI
 from utils import return_response
 
@@ -19,16 +19,29 @@ PALM_API_KEY = dotenv.get_key(".env", "PALM_API_KEY")
 
 
 class DouanesModelsEnum(Enum):
-    CDN_TOGO_2017 = "cdn-togo-2017"
+    # CEDEAO
     CDC_CEDEAO_2017 = "cdc-cedeao-2017"
-    CDN_TOGO_CEDEAO_2017 = "cdn-togo-cedeao-2017"
     TEC_CEDEAO_2022 = "tec-cedeao-2022"
+    # TOGO
+    CDN_TOGO_2017 = "cdn-togo-2017"
+    CDN_TOGO_CEDEAO_2017 = "cdn-togo-cedeao-2017"
+    FICHE_VALEUR_TOGO_2022 = "valeur-togo-fiche-2022"
+    CST_TOGO_2023 = "valeur-togo-cst-2023"
+    REGIMES_TOGO_2021 = "regimes-togo-2021"
+    REGIMES_TOGO_2023 = "regimes-togo-2023"
+
 
 douanes_models : dict[str, BaseDouaneAI] = {
-    "cdn-togo-2017": CodeDesDouanesTogo2017(),
+    # cedeao
     "cdc-cedeao-2017": CodeDesDouanesCEDEAO2017(),
+    "tec-cedeao-2022": TECCedeao2022(),
+    # togo
+    "cdn-togo-2017": CodeDesDouanesTogo2017(),
     "cdn-togo-cedeao-2017": CdnTogoEtCedeao2017(),
-    "tec-cedeao-2022": TECCedeao2022()
+    "valeur-togo-fiche-2022":  FicheValeurTogo2022(),
+    "valeur-togo-cst-2023": CodesCSTTogo2023(),
+    "regimes-togo-2021": RegimesTogo2021(),
+    "regimes-togo-2023": RegimesTogo2023(),
 }
 
 
@@ -41,11 +54,6 @@ ai_providers = {
     "open_ai": OPENAI_API_KEY,
     "google": PALM_API_KEY,
 }
-
-
-class ResponseMethod(Enum):
-    GET_INFO = "info"
-    ANSWER = "anwser"
 
 class TecCollectionEnum(Enum):
     ALL = "all"
@@ -63,7 +71,6 @@ async def answer_to_question(
     douanes_ai: DouanesModelsEnum = DouanesModelsEnum.CDN_TOGO_CEDEAO_2017,
     tec_collection: TecCollectionEnum = TecCollectionEnum.ALL,
     api_key: str | None = None, 
-    response_method: ResponseMethod = ResponseMethod.ANSWER,
     stream: bool = False, 
     prompt_only: bool = False,
     use_gpt4: bool = False,
@@ -78,12 +85,9 @@ async def answer_to_question(
     if prompt_only:
        return app.construct_prompt(question)
 
-    if response_method == ResponseMethod.GET_INFO or douanes_ai == DouanesModelsEnum.TEC_CEDEAO_2022:
-        if douanes_ai == DouanesModelsEnum.TEC_CEDEAO_2022:
-            app.BASE_COLLECTION = tec_collection.value
-        response = app.get_info(question, completor=completor.value, stream=stream, prompt_only=prompt_only,
-                                use_gpt4=use_gpt4, n_result=n_result)
-    else:
-        response = app.answer(question, completor=completor.value, stream=stream, prompt_only=prompt_only, n_result=n_result)
+    if douanes_ai == DouanesModelsEnum.TEC_CEDEAO_2022:
+        app.BASE_COLLECTION = tec_collection.value
+    response = app.get_info(question, completor=completor.value, stream=stream, prompt_only=prompt_only,
+                            use_gpt4=use_gpt4, n_result=n_result)
 
     return return_response(response, stream, prompt_only)

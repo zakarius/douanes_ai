@@ -1,4 +1,4 @@
-apt-get install python3.10 python3-pip pyton-is-python3 -y
+apt-get update && apt-get install python3-all python3-pip nginx  -y
 
 if [ ! -d /root/venvs/ai ]; then
     python -m venv /root/venvs/ai

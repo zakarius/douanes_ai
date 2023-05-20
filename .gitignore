@@ -1,10 +1,6 @@
 # cache __pycache__ files
 __pycache__/
 .chromadb_cache/
-data/*.json
-!data/tec_*_df.json
-#data/tec_*_df.json
-valeur/*/*.json
 config/
 .env
-.gpt4all/
+.vscode
