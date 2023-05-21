@@ -159,21 +159,20 @@ async def answer_to_question(
             api_key=api_key,
             stream=stream,
         )
-
-    request = DouanesRequest(
-        question=question,
-        completor=completor,
-        douanes_ai=douanes_ai,
-        tec_collection=tec_collection,
-        api_key=api_key,
-        stream=stream,
-        use_gpt4=use_gpt4,
-        prompt_only=prompt_only,
-        n_result=n_result,
-        response_function=response_function,
-    )
-
-    return await _answer_to_question(request)
+    else:
+        request = DouanesRequest(
+            question=question,
+            completor=completor,
+            douanes_ai=douanes_ai,
+            tec_collection=tec_collection,
+            api_key=api_key,
+            stream=stream,
+            use_gpt4=use_gpt4,
+            prompt_only=prompt_only,
+            n_result=n_result,
+            response_function=response_function,
+        )
+        return await _answer_to_question(request)
 
 
 @router.get("/analyse")
