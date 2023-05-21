@@ -130,7 +130,7 @@ async def _answer_to_question(req: DouanesRequest):
     ai_type = douanes_ai.split("-")[0]
 
     if ai_type == "tec":
-        app.BASE_COLLECTION = tec_collection.value
+        app.BASE_COLLECTION = tec_collection
     elif ai_type == "fiscalite":
         if response_function == ResponseFunction.TAXES_APPLIQUABLES:
             app.taxes_appliquables()

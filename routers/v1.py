@@ -45,9 +45,9 @@ async def get_cst_code_infos(question: str, api_key: str = DEFAULT_API_KEY, stre
     )
 
 @router.get("/tec/info")
-async def get_tec_info(query: str, api_key: str | None = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False, use_gpt4 : bool= False):
+async def get_tec_info(query: str | None = None, question: str |None = None , api_key: str | None = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False, use_gpt4 : bool= False):
     return await V2.answer_to_question(
-        question=query,
+        question=query if question is None else question,
         douanes_ai=V2.DouanesModelsEnum.TEC_CEDEAO_2022,
         api_key=api_key,
         stream=stream,

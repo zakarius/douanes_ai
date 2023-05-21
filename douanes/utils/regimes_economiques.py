@@ -65,7 +65,15 @@ class RegimeEconomique(BaseDouaneAI):
             if(len(question) > 4):
                 question = "Régime" +  question[:4] + " "+ question[4:]
 
-        return self.answer(question, show_prompt, prompt_only, n_result, stream, completor, use_gpt4)
+        return self.answer(
+            question = question,
+            show_prompt = show_prompt,
+            prompt_only = prompt_only,
+            n_result = n_result,
+            stream = stream,
+            completor = completor,
+            use_gpt4 = use_gpt4,
+        )
     
 
 class RegimesSyndoniaWorld(RegimeEconomique):

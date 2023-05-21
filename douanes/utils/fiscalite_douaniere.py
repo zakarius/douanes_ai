@@ -65,7 +65,7 @@ class FiscaliteDouaniere(BaseDouaneAI):
 
 
     def infos_sur_taxes_applicables(self, taxes: str, stream : bool = False):
-        codes  = re.findall(r"\(([A-Z]+)\)", taxes)
+        codes  = [taxe for taxe in   re.findall(r"\(([A-Z]+)\)", taxes) if taxe in self.taxes_codes]
         self.BASE_COLLECTION = "taxes"
         content_items = {
             "taxes": [row.content for _, row in self.taxes_df[self.taxes_df.code.isin(codes)].iterrows()]
@@ -74,6 +74,7 @@ class FiscaliteDouaniere(BaseDouaneAI):
             question = f"Informations sur les taxes applicqbles: {codes}",
             stream= stream, 
             content_items = content_items,
+            use_gpt4=True
             )
 
 

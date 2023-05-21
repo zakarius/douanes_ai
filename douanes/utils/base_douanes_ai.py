@@ -149,7 +149,7 @@ class BaseDouaneAI():
             header += "\n" + "".join(chosen_items)
         
         header+= self.EXEMPLES_FICTIFS
-        return header_prefix + header + "\n\nAGENT0: " + question + "\nReponse:"
+        return header_prefix + header + "\n\Question: " + question + "\nReponse:"
 
     def answer(self,
                question: str,
