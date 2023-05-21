@@ -207,19 +207,19 @@ def analyse_question(
     fiscalite_app: FiscaliteDouaniere = douanes_models[fiscalite.value]
     fiscalite_app.api_key = api_key
 
-    fiscalite_app.taxes_appliquables()
-    taxes_appliquables_response: str = fiscalite_app.answer(
-        question, stream=False)
 
     regimes_response = regimes_app.answer(question, stream=stream)
     fiche_valeur_response = fiche_valeur_app.answer(question, stream=stream)
 
+    fiscalite_app.taxes_appliquables()
+    taxes_appliquables_response: str = fiscalite_app.answer(
+        question, stream=False)
     fiscalite_response = fiscalite_app.infos_sur_taxes_applicables(taxes_appliquables_response, stream=stream)
 
     
 
     def taxes_applicables():
-        if stream:
+        if stream == True:
             yield {
                 "choices": [
                     {
@@ -233,15 +233,19 @@ def analyse_question(
             return taxes_applicables
 
     def title_gen(title: str):
-        yield {
-            "choices": [
-                {
-                    "delta": {
-                        "content": f"\n\n{title.upper()} : \n"
+        if stream:
+            yield {
+                "choices": [
+                    {
+                        "delta": {
+                            "content": f"\n\n{title.upper()} : \n"
+                        }
                     }
-                }
-            ]
-        }
+                ]
+            }
+        else:
+            return title
+            
 
     response = [
         title_gen("Codes des douanes"),
@@ -264,5 +268,5 @@ def analyse_question(
         return return_response(concatenated_generator, stream=stream)
     else:
         response = "\n".join(response)
-        return  return_response(response, stream==stream)
+        return  return_response(response, stream=stream)
     
