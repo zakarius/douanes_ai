@@ -8,7 +8,7 @@ def get_message(chunk) -> str:
     return message.replace(" ", "\u00a0").replace("\n", "\u0085")
 
 
-def return_response(response, stream: bool, prompt_only: bool):
+def return_response(response, stream: bool = False, prompt_only: bool = False):
     if stream and not prompt_only:
         return EventSourceResponse(map(get_message, response))
     else:

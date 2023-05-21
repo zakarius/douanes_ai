@@ -109,6 +109,7 @@ class CodeDesDouanes(BaseDouaneAI):
         self.PREFIX = f"{self.CODE_DATA_TEXT_FILE_NAME}{self.PREFIX}"
         self.pre_prompt = self.pre_prompt + \
             "Tu reponds dans untyle académique en precisant les sources, evites à tout prix de te repeter dans ta réponse et ne fabrique pas de reponse si les textes douaniers ne le permettent pas.\n\n"
+        self.TITLE = "Code des douanes"
         super().__init__()
 
 
@@ -283,8 +284,8 @@ class CodeDesDouanesNational(CodeDesDouanes):
 
     def __init__(self):
         self.PREFIX = f"_{self.PAYS}_{self.ANNEE}_"
-        self.pre_prompt = f"""Tu est un agent du service des douanes {self.DU_PAYS}. tu repponds de facon précise, concise  et complete aux questions douanières en se basant uniquement sur le Code Des Douanes Nationale {self.DU_PAYS} (CDN)."""
-
+        self.TITLE = f"Code Des Douanes Nationale {self.DU_PAYS} (CDN)"
+        self.pre_prompt = f"""Tu est un agent du service des douanes {self.DU_PAYS}. tu repponds de facon précise, concise  et complete aux questions douanières en se basant uniquement sur le {self.TITLE}."""
         super().__init__()
 
 
@@ -297,8 +298,8 @@ class CodeDesDouanesCommunautaire(CodeDesDouanes):
 
     def __init__(self):
         self.PREFIX = f"_{self.COMMUAUTE}_{self.ANNEE}_"
-        self.pre_prompt = f"""Tu est un agent du service des douanes {self.DE_LA_COMMUNAUTE}. tu repponds de facon précise, concise  et complete aux questions douanières en se basant uniquement sur le Code Des Douanes Communautaire {self.DE_LA_COMMUNAUTE} (CDC)."""
-
+        self.TITLE = f"Code Des Douanes Communautaire {self.DE_LA_COMMUNAUTE} (CDC)"
+        self.pre_prompt = f"""Tu est un agent du service des douanes {self.DE_LA_COMMUNAUTE}. tu repponds de facon précise, concise  et complete aux questions douanières en se basant uniquement sur le {self.TITLE}."""
         super().__init__()
     
 
@@ -318,7 +319,6 @@ class CodesDesDouanesNationalEtCommunautaire(CodeDesDouanes):
         self.pre_prompt = f"""Tu est un agent du service des douanes {self.DU_PAYS}. tu repponds de facon précise, concise  et complete aux questions douanières en se basant uniquement sur le Code Des Douanes Communautaire {self.DE_LA_COMMUNAUTE} (CDC) , le Code des Douanes National {self.DU_PAYS} (CDN), les accords de l'OMC sur l'evaluation en douane et l'origine des marchandise, les incotermes,  l'accord creant la ZLECAF et les règles qui la regissent, ..."""
         self.cdn.DU_PAYS = self.DU_PAYS
         self.cdc.DE_LA_COMMUNAUTE = self.DE_LA_COMMUNAUTE
-
         super().__init__()
 
     

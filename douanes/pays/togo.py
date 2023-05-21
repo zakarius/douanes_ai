@@ -2,6 +2,7 @@ from douanes.cedeao import CodeDesDouanesCEDEAO2017
 from douanes.utils.code_des_douanes import CodeDesDouanesNational, CodesDesDouanesNationalEtCommunautaire
 from douanes.utils.valeur_en_douanes import FicheValeurs, CodesCST
 from douanes.utils.regimes_economiques import RegimeEconomique
+from douanes.utils.fiscalite_douaniere import FiscaliteDouaniere
 
 # ---------------#
 #   BASE AI #
@@ -31,6 +32,13 @@ class RegimesTogo(RegimeEconomique):
     DU_PAYS = _DU_PAYS
     SOURCE_NAME = "SYDONIA World"
     VERSION = "world"
+
+
+class FiscaliteDouanesTogo(FiscaliteDouaniere):
+    PAYS = _PAYS
+    DU_PAYS= _DU_PAYS
+    VERSION = ""
+
     
 # ---------------#
 #   VERSIONED AI #
@@ -67,6 +75,11 @@ class RegimesTogo2023(RegimesTogo):
     VERSION =  "world"
     SOURCE_NAME = "SYDONIA World - Togo"
 
+
+# Fiscalite
+class FiscaliteDouanesTogo2019(FiscaliteDouanesTogo):
+    VERSION = 2019
+
 __all__ = [
     # Codes des douanes
     "CodeDesDouanesTogo2017",
@@ -76,5 +89,6 @@ __all__ = [
     "CodesCSTTogo2023",
     # Regimes
     "RegimesTogo2021",
-    "RegimesTogo2023"
+    "RegimesTogo2023",
+    "FiscaliteDouanesTogo2019",
 ]

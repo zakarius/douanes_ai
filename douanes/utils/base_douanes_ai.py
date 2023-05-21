@@ -16,11 +16,14 @@ class BaseDouaneAI():
     BASE_COLLECTION = ""
     TEMPERATURE = 0
 
+    TITLE = "Base Douanes AI"
+
 
     pre_prompt = """Tu est un assistant basé sur GPT3 qui reppond de facon précise, concise et complete aux questions douanières en se basant uniquement sur tes connaissance en matière régimes économiques en douanes des marchandises, dans le style académique. Tu te base sur la liste des régimes et codes additionnels contenus dans SYDONIA++. Tu evites à tout prix de se repeter dans sa réponse et ne fabrique pas de reponse si la liste des régimes ne le permet pas.\n\n"""
 
     DONNEES_FICIVES: str | None = None
     EXEMPLES_FICTIFS : str  | None= None
+
 
     data_frames_path: str 
     embeddings_path: str 
@@ -79,7 +82,7 @@ class BaseDouaneAI():
             collection.add(
                 ids=[str(index) for index in df.index.values.tolist()],
                 embeddings=[value for (_, value) in embeddings.items()],
-                documents=df.content.values.tolist(),
+                documents=[content.replace("\n", "##LINE##") for content in  df.content.values.tolist()],
                 increment_index=True,
             )
         return collection
@@ -100,7 +103,11 @@ class BaseDouaneAI():
             include=["documents"],
         )
 
-    def construct_prompt(self, question: str, n_result: int = 5
+    def construct_prompt(
+            self, 
+            question: str, 
+            n_result: int = 5,
+            content_items : dict[str, list[str]] | None = None, 
                          ) -> str:
         header_prefix = self.pre_prompt + (self.DONNEES_FICIVES or "")
 
@@ -117,14 +124,18 @@ class BaseDouaneAI():
         chosen_items = []
         chosen_item_len = 0
 
-        query_result = self.search(
-            collection=source,
-            query_embeddings=query_embedding,
-            n_result=n_result
-        )
-        best_items: list[str] = query_result["documents"][0]
+        if (content_items is not None) and (source in content_items.keys()):
+            best_items = content_items[source]
+        else:
+            query_result = self.search(
+                collection=source,
+                query_embeddings=query_embedding,
+                n_result=n_result
+            )
+            best_items: list[str] = query_result["documents"][0]
+            
         for item in best_items:
-            item = item.replace("\n", " ").replace("##LINE## ", "\n")
+            item = item.replace("\n", " ").replace("##LINE##", "\n")
             chosen_item_len += count_tokens(item) + separator_len()
 
             if chosen_item_len < MAX_PROMPT_LEN:
@@ -134,12 +145,11 @@ class BaseDouaneAI():
                     pass
 
         if len(chosen_items) > 0:
-            header += f"\n\n{source}".upper()
+            #header += f"\n\n{source}".upper()
             header += "\n" + "".join(chosen_items)
         
         header+= self.EXEMPLES_FICTIFS
         return header_prefix + header + "\n\nAGENT0: " + question + "\nReponse:"
-
 
     def answer(self,
                question: str,
@@ -148,11 +158,13 @@ class BaseDouaneAI():
                n_result: int = 5,
                stream: bool = False,
                completor: str = "open_ai",
+               content_items : dict[str, list[str]] | None = None, 
                use_gpt4: bool = False
                ):
         prompt = self.construct_prompt(
             question,
             n_result=n_result,
+            content_items=content_items,
         )
 
         if show_prompt:
@@ -176,6 +188,7 @@ class BaseDouaneAI():
                 return response["choices"][0]["message"]["content"]
         elif completor == "gpt4all":
             return ""
+        return ""
 
     def get_info(self,
         question: str,
@@ -184,7 +197,8 @@ class BaseDouaneAI():
         n_result: int = 5,
         stream: bool = False,
         completor: str = "open_ai",
-        use_gpt4: bool = False
+        use_gpt4: bool = False,
+        content_items : dict[str, list[str]] | None = None, 
         ) :
                return self.answer(
                     question=question,
@@ -194,4 +208,5 @@ class BaseDouaneAI():
                     stream=stream,
                     completor=completor,
                     use_gpt4 =use_gpt4,
+                    content_items=content_items,
                 )

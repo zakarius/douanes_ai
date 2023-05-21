@@ -41,7 +41,7 @@ def load_embeddings(df: pd.DataFrame, exclude_columns: list[str] = ["content"]):
 
 def compute_doc_embeddings(df: pd.DataFrame,embedding_function: EmbeddingFunction, value_key: str = "content"):
     return {
-      idx:  embedding_function([r[value_key]])[0]  for idx, r in df.iterrows()
+        idx:  embedding_function([r[value_key].replace("\n", "")])[0] for idx, r in df.iterrows()
     }
 
 def _compute_or_load_doc_embeddings(embeddings_path: str, df: pd.DataFrame, embedding_function: EmbeddingFunction, value_key: str = "content"):

@@ -70,7 +70,7 @@ class TarifExterieurCommun(BaseDouaneAI):
 
 
     def __init__(self, ):
-        self.pre_prompt = f"Tu est un assistant basé sur GPT3 qui aide les douaniers à bien classer les marchandises dans le Tarif Exterieur Commun {self.DE_LA_COMMUNAUTE} (TEC) (version {self.ANNEE}) en te basant sur tes connaissance approfondies des règles d'interpretation du Système Harmonisé de designation et de codification des marchandises (SH). Tu evite à tout prix de se repeter dans sa réponse. Tu as des informations sur les sections, chapitres, posiions et sous-positions du TEC, les chapitres de section,les positions des chapitres et les sous-positions des positions. Pour chaque posion, tu connais sa Nomenclature Tarifaire et Statisqtique (NTS), la designation, l'unité d'avaluation de la valeur en douane, le taux des DD (droits des douanes) et le taux de RS (redevence statistique) applicaples en %.  Quand tu reussit à bien classer une marchandise, tu preise l'unité d'evaluation ainsi que les taux de DD et RS appliquables. \n\nInformations des TEC dont tu dispose : \n\n"
+        self.pre_prompt = f"Tu est un assistant basé sur GPT3 qui aide les douaniers à bien classer les marchandises dans la bonne sous-posiion du Tarif Exterieur Commun {self.DE_LA_COMMUNAUTE} (TEC) (version {self.ANNEE}) en te basant sur tes connaissance approfondies des règles d'interpretation du Système Harmonisé de designation et de codification des marchandises (SH). Tu evite à tout prix de se repeter dans sa réponse. Tu as des informations sur les sections, chapitres, posiions et sous-positions du TEC, les chapitres de section,les positions des chapitres et les sous-positions des positions. Pour chaque sous-posion, tu connais sa Nomenclature Tarifaire et Statisqtique (NTS), la designation, l'unité d'avaluation de la valeur en douane, le taux des DD (droits des douanes) et le taux de RS (redevence statistique) applicaples en %. Analyse la question et classe la marchandise en question.  Quand tu reussit à bien classer une marchandise, tu precise l'unité d'evaluation ainsi que le taux de DD et le taux de RS. \n\nInformations du TEC dont tu disposes : \n\n"
         self.PREFIX = f"tec_{self.COMMUNAUTE}_{self.ANNEE}_"
         super().__init__()
 
@@ -271,7 +271,7 @@ class TarifExterieurCommun(BaseDouaneAI):
         item_section = self.sections_data[self.sections_data.number ==
                                           item_chapitre.section].iloc[0]
         if content:
-            info = f"Position {item_position.position}: {item_position.designation}"
+            info = f"Position {item_position.position}: {item_position.designation}\nSous-positions:\n"
         else:
             info = f"Section {item_section.number} - ({item_section.title}).\n"
             info += f"Chapitre {item_chapitre.number} - ({item_chapitre.title}).\n\nSOUS-POSITIONS:\n"
@@ -279,7 +279,7 @@ class TarifExterieurCommun(BaseDouaneAI):
         item_sous_positions = [TecItem(
             **item.to_dict()) for item in self.get_position_items(item_position.position)]
         for item in item_sous_positions:
-            item_info = f"{info}{item.nts} \t| {item.designation} \t| {item.unite} \t| {item.dd} \t| {item.rs} \n"
+            item_info = f"{info} \n{item.nts} \t| {item.designation} \t| {item.unite} \t| {item.dd} \t| {item.rs}"
             if use_gpt4 or content:
                 info = item_info
             elif count_tokens(item_info) > 1900:

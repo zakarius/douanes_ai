@@ -1,6 +1,7 @@
 chromadb==0.3.21
 fastapi==0.95.1
 numpy==1.24.3
+pydantic==1.10.7
 openai==0.27.5
 tiktoken==0.3.3
 uvicorn==0.22.0
