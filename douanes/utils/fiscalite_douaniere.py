@@ -1,6 +1,11 @@
+from typing import Generator
 import pandas as pd
 import re
+
+from utils import get_message
 from .base_douanes_ai import BaseDouaneAI
+import inspect
+
 
 def taxe_douaniere_content(row: pd.Series):
     return "|".join([
@@ -64,8 +69,15 @@ class FiscaliteDouaniere(BaseDouaneAI):
         self.pre_prompt+=""""Analyse la question et donne les noms (avec leurs abbreviation entre parentheses) taxes douanières appliquables en prenant bien en compte le regime economique conconcerné, les pays d'origne et de destination si renseingés et necessaires"""
 
 
-    def infos_sur_taxes_applicables(self, taxes: str, stream : bool = False):
-        codes  = [taxe for taxe in   re.findall(r"\(([A-Z]+)\)", taxes) if taxe in self.taxes_codes]
+    async def infos_sur_taxes_applicables(self, taxes, stream : bool = False):
+        _taxes = ""
+        if isinstance(taxes, str):
+            _taxes = taxes
+        else:
+            _taxes = "".join(list(taxes))
+
+        codes = [taxe for taxe in re.findall(
+            r"\(([A-Z]+)\)", _taxes) if taxe in self.taxes_codes]
         self.BASE_COLLECTION = "taxes"
         content_items = {
             "taxes": [row.content for _, row in self.taxes_df[self.taxes_df.code.isin(codes)].iterrows()]

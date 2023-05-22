@@ -15,7 +15,7 @@ from douanes.utils.fiscalite_douaniere import FiscaliteDouaniere
 from douanes.utils.regimes_economiques import RegimeEconomique
 from douanes.utils.tarif_exterieur_commun import TarifExterieurCommun
 from douanes.utils.valeur_en_douanes import CodesCST, FicheValeurs
-from utils import return_response
+from utils import get_message, return_response
 
 
 
@@ -154,7 +154,7 @@ async def answer_to_question(
     response_function: ResponseFunction = ResponseFunction.ANSWER,
    ):
     if question.startswith("@/"):
-        return analyse_question(
+        return  await analyse_question(
             question=question.removeprefix("@/"),
             api_key=api_key,
             stream=stream,
@@ -176,7 +176,7 @@ async def answer_to_question(
 
 
 @router.get("/analyse")
-def analyse_question(
+async def analyse_question(
     question: str,
     completor: AIProviders = AIProviders.OPEN_AI,
     api_key : str | None = None,
@@ -201,36 +201,10 @@ def analyse_question(
     regimes_app: RegimeEconomique = douanes_models[regimes.value]
     regimes_app.api_key = api_key    
 
-    codes_response = codes_app.answer(question, stream=stream, n_result=2)
-    tec_response = tec_app.answer(question, stream=stream)
-
     fiscalite_app: FiscaliteDouaniere = douanes_models[fiscalite.value]
     fiscalite_app.api_key = api_key
 
-
-    regimes_response = regimes_app.answer(question, stream=stream)
-    fiche_valeur_response = fiche_valeur_app.answer(question, stream=stream)
-
-    fiscalite_app.taxes_appliquables()
-    taxes_appliquables_response: str = fiscalite_app.answer(
-        question, stream=False)
-    fiscalite_response = fiscalite_app.infos_sur_taxes_applicables(taxes_appliquables_response, stream=stream)
-
-    
-
-    def taxes_applicables():
-        if stream == True:
-            yield {
-                "choices": [
-                    {
-                        "delta": {
-                            "content": taxes_appliquables_response,
-                        }
-                    }
-                ]
-            }
-        else:
-            return taxes_applicables
+    response = []
 
     def title_gen(title: str):
         if stream:
@@ -245,22 +219,70 @@ def analyse_question(
             }
         else:
             return title
-            
 
-    response = [
-        title_gen("Codes des douanes"),
-        codes_response,
-        title_gen("Tarif exterieu commun"),
-        tec_response,
-        title_gen("Régimes économiques"),
-        regimes_response,
-        title_gen("Fiche des valeur"),
-        fiche_valeur_response,
-        title_gen("Taxes applicables"),
-        taxes_applicables(),
-        title_gen("Fiscalité"),
-        fiscalite_response
-    ]
+    try:
+        codes_response = codes_app.answer(question, stream=stream, n_result=2)
+        response.append(title_gen("Codes des douanes"))
+        response.append(codes_response)
+    except:
+        pass
+
+    
+    try:
+        tec_response = tec_app.answer(question, stream=stream, n_result=5)
+        response.append(title_gen("Tarif exterieu commun"))
+        response.append(tec_response)
+    except:
+        pass
+
+    try:
+        fiche_valeur_response = fiche_valeur_app.answer(question, stream=stream, n_result=10)
+        response.append(title_gen("Fiche des valeurs"))
+        response.append(fiche_valeur_response)
+    except:
+        pass
+
+    
+    try:
+        regimes_response = regimes_app.answer(
+            question, stream=stream, n_result=10)
+        response.append(title_gen("Régimes économiques"))
+        response.append(regimes_response)
+    except :
+        pass
+
+
+    try:
+        taxes_appliquables_response = await  fiscalite_app.answer(
+            question, stream=stream)
+        def taxes_applicables():
+            if stream == False:
+                yield {
+                    "choices": [
+                        {
+                            "delta": {
+                                "content": taxes_appliquables_response,
+                            }
+                        }
+                    ]
+                }
+            else:
+                return taxes_applicables
+
+        fiscalite_app.taxes_appliquables()
+        response.append(title_gen("Taxes applicables"))
+        response.append(taxes_applicables())
+
+        try:
+            fiscalite_response = await fiscalite_app.infos_sur_taxes_applicables(
+                map(get_message, taxes_appliquables_response), stream=stream)
+            response.append(title_gen("Fiscalité "))
+            response.append(fiscalite_response)
+        except:
+            pass
+    except:
+        pass
+
  
     if stream:
         concatenated_generator = chain.from_iterable(response)
