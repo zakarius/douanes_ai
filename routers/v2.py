@@ -1,5 +1,6 @@
 from itertools import chain
 from enum import Enum
+from typing import Any, Generator
 import dotenv
 from fastapi import  APIRouter
 from fastapi.responses import PlainTextResponse
@@ -204,86 +205,60 @@ async def analyse_question(
     fiscalite_app: FiscaliteDouaniere = douanes_models[fiscalite.value]
     fiscalite_app.api_key = api_key
 
-    response = []
+    taxes_applicables_app:  FiscaliteDouaniere = douanes_models[fiscalite.value]
+    taxes_applicables_app.api_key  = api_key
 
-    def title_gen(title: str):
-        if stream:
+    
+
+    def to_openai_message(data: str):
+        if isinstance(data, str):
             yield {
                 "choices": [
                     {
                         "delta": {
-                            "content": f"\n\n{title.upper()} : \n"
+                            "content":data
                         }
                     }
                 ]
             }
+        return data
+
+    def title_gen(title: str):
+        if stream:
+            yield  from to_openai_message(f"\n\n{title.upper()} : \n")
         else:
             return title
 
-    try:
-        codes_response = codes_app.answer(question, stream=stream, n_result=2)
-        response.append(title_gen("Codes des douanes"))
-        response.append(codes_response)
-    except:
-        pass
-
     
-    try:
-        tec_response = tec_app.answer(question, stream=stream, n_result=5)
-        response.append(title_gen("Tarif exterieu commun"))
-        response.append(tec_response)
-    except:
-        pass
+    codes_response = codes_app.answer(question, stream=stream, n_result=2) 
+    tec_response = tec_app.answer(question, stream=stream, n_result=5)
+    fiche_valeur_response = fiche_valeur_app.answer(question, stream=stream, n_result=10)
+    regimes_response = regimes_app.answer( question, stream=stream, n_result=10)
 
-    try:
-        fiche_valeur_response = fiche_valeur_app.answer(question, stream=stream, n_result=10)
-        response.append(title_gen("Fiche des valeurs"))
-        response.append(fiche_valeur_response)
-    except:
-        pass
+    taxes_applicables_app = taxes_applicables_app.taxes_appliquables()
+    taxes_appliquables_response = taxes_applicables_app.answer(
+        question, stream=stream)
+   
+     # fiscalite_response = fiscalite_app.infos_sur_taxes_applicables(
+    #     map(get_message, taxes_appliquables_response), stream=stream)
 
-    
-    try:
-        regimes_response = regimes_app.answer(
-            question, stream=stream, n_result=10)
-        response.append(title_gen("Régimes économiques"))
-        response.append(regimes_response)
-    except :
-        pass
+    # yield from title_gen("Fiscalité ")
+    # yield from fiscalite_response
+
+    response= [
+        title_gen("Codes des douanes"),
+        codes_response,
+        title_gen("Tarif exterieu commun"),
+        tec_response,
+        title_gen("Fiche des valeurs"),
+        fiche_valeur_response,
+        title_gen("Régimes économiques"),
+        regimes_response,
+        title_gen("Taxes applicables"),
+        taxes_appliquables_response,
+    ]
 
 
-    try:
-        taxes_appliquables_response = await  fiscalite_app.answer(
-            question, stream=stream)
-        def taxes_applicables():
-            if stream == False:
-                yield {
-                    "choices": [
-                        {
-                            "delta": {
-                                "content": taxes_appliquables_response,
-                            }
-                        }
-                    ]
-                }
-            else:
-                return taxes_applicables
-
-        fiscalite_app.taxes_appliquables()
-        response.append(title_gen("Taxes applicables"))
-        response.append(taxes_applicables())
-
-        try:
-            fiscalite_response = await fiscalite_app.infos_sur_taxes_applicables(
-                map(get_message, taxes_appliquables_response), stream=stream)
-            response.append(title_gen("Fiscalité "))
-            response.append(fiscalite_response)
-        except:
-            pass
-    except:
-        pass
-
- 
     if stream:
         concatenated_generator = chain.from_iterable(response)
 

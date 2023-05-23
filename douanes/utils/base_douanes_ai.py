@@ -210,3 +210,23 @@ class BaseDouaneAI():
                     use_gpt4 =use_gpt4,
                     content_items=content_items,
                 )
+    async def asyncAnswer(self,
+        question: str,
+        show_prompt: bool = False,
+        prompt_only: bool = False,
+        n_result: int = 5,
+        stream: bool = False,
+        completor: str = "open_ai",
+        use_gpt4: bool = False,
+        content_items : dict[str, list[str]] | None = None, 
+        ) :
+               return self.answer(
+                    question=question,
+                    show_prompt=show_prompt,
+                    prompt_only=prompt_only,
+                    n_result=n_result,
+                    stream=stream,
+                    completor=completor,
+                    use_gpt4 =use_gpt4,
+                    content_items=content_items,
+                )

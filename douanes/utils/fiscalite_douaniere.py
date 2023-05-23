@@ -67,10 +67,12 @@ class FiscaliteDouaniere(BaseDouaneAI):
     def taxes_appliquables(self):
         self.BASE_COLLECTION = "regimes"
         self.pre_prompt+=""""Analyse la question et donne les noms (avec leurs abbreviation entre parentheses) taxes douanières appliquables en prenant bien en compte le regime economique conconcerné, les pays d'origne et de destination si renseingés et necessaires"""
+        return self
 
 
-    async def infos_sur_taxes_applicables(self, taxes, stream : bool = False):
+    def infos_sur_taxes_applicables(self, taxes, stream : bool = False):
         _taxes = ""
+        print(type(taxes))
         if isinstance(taxes, str):
             _taxes = taxes
         else:

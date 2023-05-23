@@ -3,12 +3,9 @@ from sse_starlette import EventSourceResponse
 from fastapi.responses import PlainTextResponse
 
 def get_message(chunk) -> str:
-    try:
-        message: str = chunk['choices'][0]['delta'].get(
-            "content", "")
-        return message.replace(" ", "\u00a0").replace("\n", "\u0085")
-    except:
-        return ""
+    message: str = chunk if isinstance(chunk, str) else chunk['choices'][0]['delta'].get(
+        "content", "")
+    return message.replace(" ", "\u00a0").replace("\n", "\u0085")
 
 
 def return_response(response, stream: bool = False, prompt_only: bool = False):
