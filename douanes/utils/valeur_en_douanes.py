@@ -1,6 +1,7 @@
 import pandas as pd
 from .base_douanes_ai import BaseDouaneAI
 
+
 def valeur_content(row: pd.Series):
     marchandise = row["marchandise"]
     position = row['position']
@@ -19,18 +20,18 @@ def valeur_content(row: pd.Series):
 class FicheValeurs(BaseDouaneAI):
     BASE_COLLECTION = "valeurs"
     PREFIX = "fiche"
-    PAYS : str  | None= ""
-    DU_PAYS:  str  | None = ""
+    PAYS: str | None = ""
+    DU_PAYS:  str | None = ""
     TEMPERATURE = 0.1
     VERSION: str | None = None
 
-
     def __init__(self):
-        self.pre_prompt = f"""Tu est un assistant douanier basé sur GPT3. Tu aides agents du service des douanes {self.DU_PAYS} à determiner la valeur connue des marchandies en utilisant la fiche des valeur à ta disposition.Tu repponds de facon précise, concise et complete, en evitant à tout prix de te repeter. Tu ne fabrique pas de reponse si la fiche des valeur ne le permet pas.\n\n"""
+        self.pre_prompt = f"""Tu est un assistant douanier basé sur GPT3. Tu aides agents du service des douanes {self.DU_PAYS} à determiner la valeur des marchandies et à maintriser l'evaluation en douanes des marchandises, en utilisant tes connaissances profondes en matière d'avaluation des marchandises notamment: la definition de la valeur de bruxelle (la DVB) , l'accord sur la mise en oeuvre de l'article VII du GATT de l'OMC (l'Accord), les recommandations de l'OMD, la fiche des valeur connues à ta disposition, ....Tu repponds de facon précise, concise et complete, en evitant à tout prix de te repeter. Tu ne fabrique pas de reponse si la fiche des valeur et les textes ne le permettent pas. Si l'evaluation ne peut etre faite a partir de la fiche des valeur, tu utilise tes connaissance des textes cités precendemment pour recommander une ou deux methodes d'evaluation tout en expliquant en détails cette(ces) methode(s) et donnant des exemples d'evalution en utlisant cette(ces) methode(s)\n\n"""
 
         self.PREFIX = f"valeur_{self.PAYS}_{self.PREFIX}{('_'+ self.VERSION + '_') if self.VERSION is not None else '_'}"
 
         self.DONNEES_FICIVES = """
+        EXTRAIT DES VALEURS CONNUES
         Marchandises | Position Tarifaire dans le Tarif Exterieur Commun de la CEDEAO| unité ou reference | ancienne valeur | nouvelle valeur
         * Pièce détachée vélo | 87141100900 8714920090 | Kg/TC X 20 / TC X40 | 700/2 500 000 / 3 500 000 DD | 700/2 500 000 / 3500 000 DD
         * Ustensiles de cuisine en série | |Carton|8000-12000|
@@ -80,5 +81,6 @@ class CodesCST(FicheValeurs):
 
         self.PREFIX = f"valeur_{self.PAYS}_{self.PREFIX}{('_'+ self.VERSION + '_') if self.VERSION is not None else '_'}"
         super().__init__()
+
 
 __all__ = ["FicheValeurs", "CodesCST"]

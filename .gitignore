@@ -4,3 +4,5 @@ __pycache__/
 config/
 .env
 .vscode
+.vs
+update.py

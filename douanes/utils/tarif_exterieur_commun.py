@@ -30,12 +30,12 @@ def split_text_by_char_limit(text: str | None = None, max_char_token_chunk: int 
 
 class TecSection():
     content: str
+
     def __init__(self, number: str | None = None, title: str | None = None, note: str | None = None):
         self.number = number
         self.title = title
         self.note = note
 
-    
 
 class TecChapitre(TecSection):
     def __init__(self, number: str | None = None, title: str | None = None, note: str | None = None, section: str | None = None):
@@ -44,7 +44,7 @@ class TecChapitre(TecSection):
 
 
 class TecItem():
-   
+
     def __init__(self, position: str | None = None, nts: str | None = None, designation: str | None = None, unite: str | None = None, dd: str | None = None, rs: str | None = None):
         self.position = position
         self.nts = nts
@@ -62,25 +62,23 @@ class TarifExterieurCommun(BaseDouaneAI):
     CHAPISTES_DF = "chapitres"
     ITEMS_DF = "items"
     NOTES_DF = "notes"
-    COMMUNAUTE= "communaute"
+    COMMUNAUTE = "communaute"
     DE_LA_COMMUNAUTE = "de la commuanuté"
     ANNEE = ""
-    
+
     BASE_COLLECTION = "all"
 
-
     def __init__(self, ):
-        self.pre_prompt = f"Tu est un assistant basé sur GPT3 qui aide les douaniers à bien classer les marchandises dans la bonne sous-posiion du Tarif Exterieur Commun {self.DE_LA_COMMUNAUTE} (TEC) (version {self.ANNEE}) en te basant sur tes connaissance approfondies des règles d'interpretation du Système Harmonisé de designation et de codification des marchandises (SH). Tu evite à tout prix de se repeter dans sa réponse. Tu as des informations sur les sections, chapitres, posiions et sous-positions du TEC, les chapitres de section,les positions des chapitres et les sous-positions des positions. Pour chaque sous-posion, tu connais sa Nomenclature Tarifaire et Statisqtique (NTS), la designation, l'unité d'avaluation de la valeur en douane, le taux des DD (droits des douanes) et le taux de RS (redevence statistique) applicaples en %. Analyse la question et classe la marchandise en question.  Quand tu reussit à bien classer une marchandise, tu precise l'unité d'evaluation ainsi que le taux de DD et le taux de RS. \n\nInformations du TEC dont tu disposes : \n\n"
+        self.pre_prompt = f"Tu est un assistant basé sur GPT3 qui aide les douaniers à bien classer les marchandises dans la bonne sous-posiion du Tarif Exterieur Commun {self.DE_LA_COMMUNAUTE} (TEC) (version {self.ANNEE}) en te basant sur tes connaissance approfondies des règles d'interpretation du Système Harmonisé de designation et de codification des marchandises (SH). Tu evite à tout prix de se repeter dans sa réponse. Tu as des informations sur les sections, chapitres, posiions et sous-positions du TEC, les chapitres de section,les positions des chapitres et les sous-positions des positions. Pour chaque sous-posion, tu connais son code, la designation, l'unité d'avaluation de la valeur en douane, le taux des DD (droits des douanes) et le taux de RS (redevence statistique) applicaples en %. Analyse la question et classe la marchandise en question.  Quand tu reussit à bien classer une marchandise, tu precise l'unité d'evaluation ainsi que le taux de DD et le taux de RS. Quand juste un numero de section, chapitre, position ou sous position est fourni, tu donnes des information sur la section, chapitre, position ou sous-position en question. \n\nInformations du TEC dont tu disposes : \n\n"
         self.PREFIX = f"tec_{self.COMMUNAUTE}_{self.ANNEE}_"
         super().__init__()
-
 
     def load_data(self, name: str = "items"):
         root: str = self.data_frames_path
         return pd.read_json(
             pathlib.Path(f'{root}{name}_df.json'), orient='records',
         )
-    
+
     def _df(self, data: str = "positions") -> pd.DataFrame:
         root: str = self.data_frames_path
         data_path = pathlib.Path(f'{root}{data}_indexed_df.json')
@@ -91,17 +89,20 @@ class TarifExterieurCommun(BaseDouaneAI):
                 _df = self.notes_data
             elif data == "sections":
                 _df = self.sections_data
-                _df["content"] = _df.apply(lambda row: self._get_section_info(row.number, True), axis=1)
+                _df["content"] = _df.apply(
+                    lambda row: self._get_section_info(row.number, True), axis=1)
             elif data == "chapitres":
                 _df = self.chapitres_data
-                _df["content"] = _df.apply(lambda row: self._get_chapitre_info(row.number, content=True), axis=1)
+                _df["content"] = _df.apply(lambda row: self._get_chapitre_info(
+                    row.number, content=True), axis=1)
             elif data == "positions":
                 _df = self.items_data[self.items_data.position != ""]
                 _df["content"] = _df.apply(
                     lambda row: self._get_position_info(row.position, content=True), axis=1)
             else:
                 _df = self.items_data[self.items_data.nts != ""]
-                _df["content"] = _df.apply(lambda row : self._get_nts_infp(row.nts), axis=1)
+                _df["content"] = _df.apply(
+                    lambda row: self._get_nts_infp(row.nts), axis=1)
             _df = _df[["content"]]
             _df.to_json(data_path, orient="index")
             return _df
@@ -119,7 +120,7 @@ class TarifExterieurCommun(BaseDouaneAI):
     def load_embeddings(self, data: str = "all", _df: pd.DataFrame | None = None):
         if data != 'all':
             return super().load_embeddings(data, _df)
-        
+
         merged_dict = {}
         index = 0
         for key, value in self.load_embeddings("notes").items():
@@ -132,7 +133,7 @@ class TarifExterieurCommun(BaseDouaneAI):
         for key, value in self.load_embeddings("chapitres").items():
             merged_dict[str(index)] = value
             index += 1
-        
+
         for key, value in self.load_embeddings("positions").items():
             merged_dict[str(index)] = value
             index += 1
@@ -141,7 +142,7 @@ class TarifExterieurCommun(BaseDouaneAI):
     @property
     def regles_generales(self):
         with open(self.data_frames_path+"regles_generales.txt") as f:
-           return  "\n".join(f.readlines())
+            return "\n".join(f.readlines())
 
     @property
     def chapitres_data(self) -> pd.DataFrame:
@@ -165,16 +166,16 @@ class TarifExterieurCommun(BaseDouaneAI):
     @property
     def notes_data(self) -> pd.DataFrame:
         rg_chunks = split_text_by_char_limit(self.regles_generales, 50)
-        notes_sections = self.sections_data.apply(lambda row : "\n".join([f"Note Section {row.number} {chunk}"  for chunk in   split_text_by_char_limit(row.note, 50)]), axis=1)
-        notes_chapitres = self.chapitres_data.apply(lambda row : "\n".join([f"Note Chapitre {row.number} {chunk}"  for chunk in   split_text_by_char_limit(row.note, 50)]), axis=1)
-        notes: list[str] = [*rg_chunks, *notes_sections.to_list(), *notes_chapitres.to_list()]
+        notes_sections = self.sections_data.apply(lambda row: "\n".join(
+            [f"Note Section {row.number} {chunk}" for chunk in split_text_by_char_limit(row.note, 50)]), axis=1)
+        notes_chapitres = self.chapitres_data.apply(lambda row: "\n".join(
+            [f"Note Chapitre {row.number} {chunk}" for chunk in split_text_by_char_limit(row.note, 50)]), axis=1)
+        notes: list[str] = [*rg_chunks, *
+                            notes_sections.to_list(), *notes_chapitres.to_list()]
         return pd.DataFrame(
-            data=[note for note in  notes if note.strip() != ""],
+            data=[note for note in notes if note.strip() != ""],
             columns=["content"]
         )
-        
-
-        
 
     def get_position_items(self, position: str):
         position_items: list[pd.Series] = []
@@ -221,7 +222,7 @@ class TarifExterieurCommun(BaseDouaneAI):
             info += f"\n\nNotes:\n{notes}"
         return info
 
-    def _get_chapitre_info(self, nts: str, use_gpt4=False, content : bool = False):
+    def _get_chapitre_info(self, nts: str, use_gpt4=False, content: bool = False):
         nts = nts.replace(".", "")
         try:
             item_chapitre = self.chapitres_data[self.chapitres_data.number ==
@@ -238,7 +239,7 @@ class TarifExterieurCommun(BaseDouaneAI):
             info = ""
         else:
             info = f"Section {item_section.number} - ({item_section.title})."
-        info+=f"\nChapitre {item_chapitre.number} - ({item_chapitre.title}).\n\nPositions:\n"
+        info += f"\nChapitre {item_chapitre.number} - ({item_chapitre.title}).\n\nPositions:\n"
         info += "\n".join(positions)
 
         if content:
@@ -259,7 +260,7 @@ class TarifExterieurCommun(BaseDouaneAI):
             info += f"\n\nNotes:\n{notes}"
         return info
 
-    def _get_position_info(self, nts: str, use_gpt4=False, content: bool =  False):
+    def _get_position_info(self, nts: str, use_gpt4=False, content: bool = False):
         nts = nts.replace(".", "")
         try:
             item_position = TecItem(
@@ -336,15 +337,15 @@ class TarifExterieurCommun(BaseDouaneAI):
         return info if len(parents) > 0 else None
 
     def get_info(
-            self, 
-            question: str, 
-            completor: str = "open_ai",
-            stream: bool = False, 
-            show_prompt: bool = False,
-            prompt_only: bool = False, 
-            use_gpt4: bool = False,
-            n_result: int = 10,
-        ):
+        self,
+        question: str,
+        completor: str = "open_ai",
+        stream: bool = False,
+        show_prompt: bool = False,
+        prompt_only: bool = False,
+        use_gpt4: bool = False,
+        n_result: int = 10,
+    ):
         def error_message():
             return self.answer(
                 question=question,
@@ -421,7 +422,7 @@ class TarifExterieurCommun(BaseDouaneAI):
             stream=stream,
             max_tokens=3000 - count_tokens(prompt),
         )
-        if(stream):
+        if (stream):
             return response
         else:
             return response["choices"][0]["message"]["content"]
