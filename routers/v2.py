@@ -1,24 +1,19 @@
 from itertools import chain
 from enum import Enum
-from typing import Any, Generator
 import dotenv
-from fastapi import  APIRouter
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter
 from pydantic import BaseModel
-from sse_starlette import EventSourceResponse
 from douanes.monde import *
-from  douanes.afrique import *
-from  douanes.cedeao import CodeDesDouanesCEDEAO2017, TECCedeao2022
-from  douanes.pays.togo import CdnTogoEtCedeao2017, CodeDesDouanesTogo2017, FicheValeurTogo2022, CodesCSTTogo2023, RegimesTogo2021, RegimesTogo2023, FiscaliteDouanesTogo2019
+from douanes.afrique import *
+from douanes.cedeao import CodeDesDouanesCEDEAO2017, TECCedeao2022
+from douanes.pays.togo import CdnTogoEtCedeao2017, CodeDesDouanesTogo2017, FicheValeurTogo2022, CodesCSTTogo2023, RegimesTogo2021, RegimesTogo2023, FiscaliteDouanesTogo2019
 from douanes.utils import BaseDouaneAI
 from douanes.utils.code_des_douanes import CodeDesDouanes
 from douanes.utils.fiscalite_douaniere import FiscaliteDouaniere
 from douanes.utils.regimes_economiques import RegimeEconomique
 from douanes.utils.tarif_exterieur_commun import TarifExterieurCommun
 from douanes.utils.valeur_en_douanes import CodesCST, FicheValeurs
-from utils import get_message, return_response
-
-
+from utils import return_response
 
 
 router = APIRouter()
@@ -41,26 +36,30 @@ class DouanesModelsEnum(Enum):
     REGIMES_TOGO_2023 = "regimes-togo-2023"
     FISCALITE_TOGO_2019 = "fiscalite-togo-2019"
 
+
 class CodeDesDouanesEnum(Enum):
     CDC_CEDEAO_2017 = "cdc-cedeao-2017"
     CDN_TOGO_2017 = "cdn-togo-2017"
     CDN_TOGO_CEDEAO_2017 = "cdn-togo-cedeao-2017"
 
+
 class TecEnum(Enum):
     TEC_CEDEAO_2022 = "tec-cedeao-2022"
+
 
 class RegimesEconomiquesEnum(Enum):
     REGIMES_TOGO_2021 = "regimes-togo-2021"
 
+
 class FicheValeurEnum(Enum):
     FICHE_VALEUR_TOGO_2022 = "valeur-togo-fiche-2022"
+
 
 class FiscaliteEnum(Enum):
     FISCALITE_TOGO_2019 = "fiscalite-togo-2019"
 
 
-
-douanes_models : dict[str, BaseDouaneAI] = {
+douanes_models: dict[str, BaseDouaneAI] = {
     # cedeao
     "cdc-cedeao-2017": CodeDesDouanesCEDEAO2017(),
     "tec-cedeao-2022": TECCedeao2022(),
@@ -80,16 +79,19 @@ class AIProviders(Enum):
     GOOGLE = "google"
     GPT4ALL = "gpt4all"
 
+
 ai_providers = {
     "open_ai": OPENAI_API_KEY,
     "google": PALM_API_KEY,
 }
+
 
 class TecCollectionEnum(Enum):
     ALL = "all"
     SECTIONS = "sections"
     CHAPITRES = "chapitres"
     POSITIONS = "positions"
+
 
 class ResponseFunction(Enum):
     ANSWER = "answer"
@@ -109,6 +111,7 @@ class DouanesRequest(BaseModel):
     n_result: int = 5
     response_function: ResponseFunction = ResponseFunction.ANSWER
 
+
 async def _answer_to_question(req: DouanesRequest):
     completor = req.completor.value
     douanes_ai = req.douanes_ai.value
@@ -121,8 +124,7 @@ async def _answer_to_question(req: DouanesRequest):
     response_function = req.response_function
     api_key = req.api_key
 
-
-    api_key  = ai_providers[completor] if api_key is None else api_key
+    api_key = ai_providers[completor] if api_key is None else api_key
     assert api_key is not None and api_key.strip() != "", "La clé API est obligatoire"
 
     app = douanes_models[douanes_ai]
@@ -141,21 +143,22 @@ async def _answer_to_question(req: DouanesRequest):
 
     return return_response(response, stream, prompt_only)
 
+
 @router.get("/answer")
 async def answer_to_question(
-    question: str, 
+    question: str,
     completor: AIProviders = AIProviders.OPEN_AI,
     douanes_ai: DouanesModelsEnum = DouanesModelsEnum.CDN_TOGO_CEDEAO_2017,
     tec_collection: TecCollectionEnum = TecCollectionEnum.ALL,
-    api_key: str | None = None, 
-    stream: bool = False, 
+    api_key: str | None = None,
+    stream: bool = False,
     prompt_only: bool = False,
     use_gpt4: bool = False,
     n_result: int = 5,
     response_function: ResponseFunction = ResponseFunction.ANSWER,
-   ):
+):
     if question.startswith("@/"):
-        return  await analyse_question(
+        return await analyse_question(
             question=question.removeprefix("@/"),
             api_key=api_key,
             stream=stream,
@@ -180,15 +183,15 @@ async def answer_to_question(
 async def analyse_question(
     question: str,
     completor: AIProviders = AIProviders.OPEN_AI,
-    api_key : str | None = None,
+    api_key: str | None = None,
     code_des_douanes: CodeDesDouanesEnum = CodeDesDouanesEnum.CDN_TOGO_CEDEAO_2017,
     tec: TecEnum = TecEnum.TEC_CEDEAO_2022,
     fiche_valeur: FicheValeurEnum = FicheValeurEnum.FICHE_VALEUR_TOGO_2022,
     regimes: RegimesEconomiquesEnum = RegimesEconomiquesEnum.REGIMES_TOGO_2021,
     fiscalite: FiscaliteEnum = FiscaliteEnum.FISCALITE_TOGO_2019,
-    stream : bool = False,
+    stream: bool = False,
 ):
-    api_key  = ai_providers[completor.value] if api_key is None else api_key
+    api_key = ai_providers[completor.value] if api_key is None else api_key
 
     codes_app: CodeDesDouanes = douanes_models[code_des_douanes.value]
     codes_app.api_key = api_key
@@ -200,15 +203,13 @@ async def analyse_question(
     fiche_valeur_app.api_key = api_key
 
     regimes_app: RegimeEconomique = douanes_models[regimes.value]
-    regimes_app.api_key = api_key    
+    regimes_app.api_key = api_key
 
     fiscalite_app: FiscaliteDouaniere = douanes_models[fiscalite.value]
     fiscalite_app.api_key = api_key
 
     taxes_applicables_app:  FiscaliteDouaniere = douanes_models[fiscalite.value]
-    taxes_applicables_app.api_key  = api_key
-
-    
+    taxes_applicables_app.api_key = api_key
 
     def to_openai_message(data: str):
         if isinstance(data, str):
@@ -216,7 +217,7 @@ async def analyse_question(
                 "choices": [
                     {
                         "delta": {
-                            "content":data
+                            "content": data
                         }
                     }
                 ]
@@ -225,27 +226,27 @@ async def analyse_question(
 
     def title_gen(title: str):
         if stream:
-            yield  from to_openai_message(f"\n\n{title.upper()} : \n")
+            yield from to_openai_message(f"\n\n{title.upper()} : \n")
         else:
             return title
 
-    
-    codes_response = codes_app.answer(question, stream=stream, n_result=2) 
+    codes_response = codes_app.answer(question, stream=stream, n_result=2)
     tec_response = tec_app.answer(question, stream=stream, n_result=5)
-    fiche_valeur_response = fiche_valeur_app.answer(question, stream=stream, n_result=10)
-    regimes_response = regimes_app.answer( question, stream=stream, n_result=10)
+    fiche_valeur_response = fiche_valeur_app.answer(
+        question, stream=stream, n_result=10)
+    regimes_response = regimes_app.answer(question, stream=stream, n_result=10)
 
     taxes_applicables_app = taxes_applicables_app.taxes_appliquables()
     taxes_appliquables_response = taxes_applicables_app.answer(
         question, stream=stream)
-   
-     # fiscalite_response = fiscalite_app.infos_sur_taxes_applicables(
+
+    # fiscalite_response = fiscalite_app.infos_sur_taxes_applicables(
     #     map(get_message, taxes_appliquables_response), stream=stream)
 
     # yield from title_gen("Fiscalité ")
     # yield from fiscalite_response
 
-    response= [
+    response = [
         title_gen("Codes des douanes"),
         codes_response,
         title_gen("Tarif exterieu commun"),
@@ -258,12 +259,10 @@ async def analyse_question(
         taxes_appliquables_response,
     ]
 
-
     if stream:
         concatenated_generator = chain.from_iterable(response)
 
         return return_response(concatenated_generator, stream=stream)
     else:
         response = "\n".join(response)
-        return  return_response(response, stream=stream)
-    
+        return return_response(response, stream=stream)
