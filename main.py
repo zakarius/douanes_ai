@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import uvicorn
 
 # APi class
-from routers import V1, V2, utils
+from routers import V1, V2, tools
 
 app = FastAPI(
     title="SuperDouanier API",
@@ -12,7 +12,7 @@ app = FastAPI(
 
 app.include_router(V2, prefix="/v2", tags=["V2"])
 app.include_router(V1, prefix="", tags=["V1"], deprecated=True)
-app.include_router(utils, prefix="/utils", tags=["Utils"])
+app.include_router(tools, prefix="/utils", tags=["Utils"])
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
