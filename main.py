@@ -12,7 +12,7 @@ app = FastAPI(
 
 app.include_router(V2, prefix="/v2", tags=["V2"])
 app.include_router(V1, prefix="", tags=["V1"], deprecated=True)
-app.include_router(utils.router, prefix="/utils", tags=["Utils"])
+app.include_router(utils, prefix="/utils", tags=["Utils"])
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
