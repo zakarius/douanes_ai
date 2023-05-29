@@ -5,8 +5,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from douanes.monde import *
 from douanes.afrique import *
-from douanes.cedeao import CodeDesDouanesCEDEAO2017, TECCedeao2022
-from douanes.pays.togo import CdnTogoEtCedeao2017, CodeDesDouanesTogo2017, FicheValeurTogo2022, CodesCSTTogo2023, RegimesTogo2021, RegimesTogo2023, FiscaliteDouanesTogo2019
+from douanes.zones import CodeDesDouanesCEDEAO2017, TECCedeao2022
+from douanes.pays.togo import CdnTogoEtCedeao2017, CodeDesDouanesTogo2017, FicheValeurTogo2022, CodesCSTTogo2023, RegimesTogo2021, RegimesTogo2023, FiscaliteDouanesTogo2019, TecTogo2022
 from douanes.utils import BaseDouaneAI
 from douanes.utils.code_des_douanes import CodeDesDouanes
 from douanes.utils.fiscalite_douaniere import FiscaliteDouaniere
@@ -29,6 +29,7 @@ class DouanesModelsEnum(Enum):
     TEC_CEDEAO_2022 = "tec-cedeao-2022"
     # TOGO
     CDN_TOGO_2017 = "cdn-togo-2017"
+    TEC_TOGO_2022 = "tec-togo-2022"
     CDN_TOGO_CEDEAO_2017 = "cdn-togo-cedeao-2017"
     FICHE_VALEUR_TOGO_2022 = "valeur-togo-fiche-2022"
     CST_TOGO_2023 = "valeur-togo-cst-2023"
@@ -45,6 +46,7 @@ class CodeDesDouanesEnum(Enum):
 
 class TecEnum(Enum):
     TEC_CEDEAO_2022 = "tec-cedeao-2022"
+    TEC_TOGO_2022 = "tec-togo-2022"
 
 
 class RegimesEconomiquesEnum(Enum):
@@ -65,6 +67,7 @@ douanes_models: dict[str, BaseDouaneAI] = {
     "tec-cedeao-2022": TECCedeao2022(),
     # togo
     "cdn-togo-2017": CodeDesDouanesTogo2017(),
+    "tec-togo-2022": TecTogo2022(),
     "cdn-togo-cedeao-2017": CdnTogoEtCedeao2017(),
     "valeur-togo-fiche-2022":  FicheValeurTogo2022(),
     "valeur-togo-cst-2023": CodesCSTTogo2023(),
@@ -189,7 +192,7 @@ async def analyse_question(
     fiche_valeur: FicheValeurEnum = FicheValeurEnum.FICHE_VALEUR_TOGO_2022,
     regimes: RegimesEconomiquesEnum = RegimesEconomiquesEnum.REGIMES_TOGO_2021,
     fiscalite: FiscaliteEnum = FiscaliteEnum.FISCALITE_TOGO_2019,
-    stream: bool = False,
+    stream: bool = True,
 ):
     api_key = ai_providers[completor.value] if api_key is None else api_key
 

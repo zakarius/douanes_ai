@@ -10,7 +10,6 @@ async def extract_pdf_tables(file: UploadFile = File(...)):
     # Read the uploaded PDF file
     pdf_data = await file.read()
     tables = []
-
     with pdfplumber.open(io.BytesIO(pdf_data)) as pdf:
         # Extract tables from the PDF
         for page in pdf.pages:

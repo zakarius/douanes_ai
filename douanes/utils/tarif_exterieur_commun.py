@@ -62,10 +62,10 @@ class TarifExterieurCommun(BaseDouaneAI):
     CHAPISTES_DF = "chapitres"
     ITEMS_DF = "items"
     NOTES_DF = "notes"
-    COMMUNAUTE = "communaute"
-    DE_LA_COMMUNAUTE = "de la commuanuté"
+    COMMUNAUTE: str
+    DE_LA_COMMUNAUTE: str
     ANNEE = ""
-
+    TEMPERATURE = 0.9
     BASE_COLLECTION = "all"
 
     def __init__(self, ):
@@ -336,6 +336,9 @@ class TarifExterieurCommun(BaseDouaneAI):
 
         return info if len(parents) > 0 else None
 
+    def add_additional_info(self, nts: str) -> str:
+        return ""
+
     def get_info(
         self,
         question: str,
@@ -394,6 +397,8 @@ class TarifExterieurCommun(BaseDouaneAI):
         if info is None:
             return error_message()
 
+        info += self.add_additional_info(nts)
+
         prompt = self.pre_prompt
         prompt += info
         prompt += ".\n\n"
@@ -414,7 +419,7 @@ class TarifExterieurCommun(BaseDouaneAI):
         response = openai.ChatCompletion.create(
             model="gpt-4" if (len(nts) == 2 and use_gpt4 ==
                               True and count_tokens(prompt) > 1500) else COMPLETIONS_MODEL,
-            temperature=0,
+            temperature=self.TEMPERATURE,
             messages=[
                 {'role': "system", 'content': prompt_parts[0]},
                 {"role": "user", "content": "AGENT0: "+prompt_parts[1]},

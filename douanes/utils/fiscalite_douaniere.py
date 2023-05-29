@@ -16,15 +16,17 @@ def taxe_douaniere_content(row: pd.Series):
         row.imposition
     ])
 
+
 def regime_taxes_content(row: pd.Series):
     return "|".join([
         row.regime,
         row.taxes
     ])
 
+
 class FiscaliteDouaniere(BaseDouaneAI):
     BASE_COLLECTION = "taxes"
-    PAYS: str  | None = ''
+    PAYS: str | None = ''
     DU_PAYS: str | None = ''
     VERSION: str = "2023"
 
@@ -44,18 +46,18 @@ class FiscaliteDouaniere(BaseDouaneAI):
             excel_data = pd.read_excel(
                 open(file_path[:-1]+".xlsx", "rb"), header=0, dtype=str, sheet_name=[data])[data]
             _df = pd.DataFrame(data=excel_data, dtype=str)
-        
+
             if (data == "taxes"):
                 _df.columns = ["code", "nom", "base_legal",
                                "base_taxable", "imposition"]
                 _df["content"] = _df.apply(taxe_douaniere_content, axis=1)
-            else: # regimes
+            else:  # regimes
                 _df.columns = ["regime", "taxes"]
                 _df["content"] = _df.apply(regime_taxes_content, axis=1)
             _df.to_json(df_path, orient="records")
         _df.reset_index(inplace=True)
         return _df
-    
+
     @property
     def taxes_df(self):
         return self.df("taxes")
@@ -63,16 +65,35 @@ class FiscaliteDouaniere(BaseDouaneAI):
     @property
     def taxes_codes(self):
         return self.df("taxes")["code"].tolist()
-    
+
     def taxes_appliquables(self):
         self.BASE_COLLECTION = "regimes"
-        self.pre_prompt+=""""Analyse la question et donne les noms (avec leurs abbreviation entre parentheses) taxes douanières appliquables en prenant bien en compte le regime economique conconcerné, les pays d'origne et de destination si renseingés et necessaires"""
+        self.pre_prompt += """"Analyse la question et donne les noms (avec leurs abbreviation entre parentheses) taxes douanières appliquables en prenant bien en compte le regime economique conconcerné, les pays d'origne et de destination si renseingés et necessaires"""
         return self
 
+    def chercher_taxes_appliquables(self,
+                                    question: str,
+                                    show_prompt: bool = False,
+                                    prompt_only: bool = False,
+                                    n_result: int = 5,
+                                    stream: bool = False,
+                                    completor: str = "open_ai",
+                                    use_gpt4: bool = False
+                                    ):
+        question = question.strip()
+        ai = self.taxes_appliquables()
+        return ai.answer(
+            question=question,
+            show_prompt=show_prompt,
+            prompt_only=prompt_only,
+            n_result=n_result,
+            stream=stream,
+            completor=completor,
+            use_gpt4=use_gpt4,
+        )
 
-    def infos_sur_taxes_applicables(self, taxes, stream : bool = False):
+    def infos_sur_taxes_applicables(self, taxes, stream: bool = False):
         _taxes = ""
-        print(type(taxes))
         if isinstance(taxes, str):
             _taxes = taxes
         else:
@@ -85,38 +106,36 @@ class FiscaliteDouaniere(BaseDouaneAI):
             "taxes": [row.content for _, row in self.taxes_df[self.taxes_df.code.isin(codes)].iterrows()]
         }
         return self.answer(
-            question = f"Informations sur les taxes applicqbles: {codes}",
-            stream= stream, 
-            content_items = content_items,
+            question=f"Informations sur les taxes : {codes}",
+            stream=stream,
+            content_items=content_items,
             use_gpt4=True
-            )
+        )
 
-
-    def get_info(self, 
-                question: str, 
-                show_prompt: bool = False,
-                prompt_only: bool = False,
-                n_result: int = 5, 
-                stream: bool = False,
-                completor: str = "open_ai",
-                use_gpt4: bool = False
-            ):
+    def get_info(self,
+                 question: str,
+                 show_prompt: bool = False,
+                 prompt_only: bool = False,
+                 n_result: int = 5,
+                 stream: bool = False,
+                 completor: str = "open_ai",
+                 use_gpt4: bool = False
+                 ):
         question = question.strip()
-        content_items: dict[str, list[str]] | None  = None
+        content_items: dict[str, list[str]] | None = None
         if (question in self.taxes_codes):
             self.BASE_COLLECTION = "taxes"
             content_items = {
-                "taxes": [row.content  for _, row in self.taxes_df[self.taxes_df.code == question].iterrows()]
+                "taxes": [row.content for _, row in self.taxes_df[self.taxes_df.code == question].iterrows()]
             }
 
         return self.answer(
-            question = question, 
-            show_prompt = show_prompt, 
-            prompt_only = prompt_only, 
-            n_result = n_result, 
-            stream= stream, 
-            completor = completor, 
-            use_gpt4= use_gpt4, 
-            content_items = content_items,
-            )
-    
+            question=question,
+            show_prompt=show_prompt,
+            prompt_only=prompt_only,
+            n_result=n_result,
+            stream=stream,
+            completor=completor,
+            use_gpt4=use_gpt4,
+            content_items=content_items,
+        )
