@@ -13,12 +13,13 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://douanes-togolaises.web.app'",
-        "https://douanes-togolaises.firebaseapp.com",
+        "douanes-togolaises.web.app'",
+        "douanes-togolaises.firebaseapp.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+
 )
 
 app.include_router(V3, prefix="/v3", tags=["v3"])
