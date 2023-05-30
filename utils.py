@@ -7,7 +7,7 @@ from fastapi.responses import PlainTextResponse
 def get_message(chunk) -> str:
     message: str = chunk if isinstance(chunk, str) else chunk['choices'][0]['delta'].get(
         "content", "")
-    return message.replace(" ", "#SPACE#").replace("\n", "##LINE##")
+    return message.replace(" ", "##SPACE##").replace("\n", "##LINE##")
 
 
 def get_chat_gpt_message(chunk:  bytes) -> str:
@@ -17,7 +17,7 @@ def get_chat_gpt_message(chunk:  bytes) -> str:
         msg = json.loads(bytes_str)
         message: str = msg['message']["content"]['parts'][0]
         print(message)
-        return message.replace(" ", "##SPACE#").replace("\n", "##LINE##")
+        return message.replace(" ", "##SPACE##").replace("\n", "##LINE##")
     except:
         return bytes_str
 
