@@ -1,10 +1,13 @@
-
-from typing import Any, Generator
+import itertools
+import json
+import uuid
+from sseclient import SSEClient
 from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction, EmbeddingFunction
 from chromadb.api import Where, WhereDocument, QueryResult, Collection
 from chromadb.api.types import Embedding
 import openai
 import pandas as pd
+import requests
 from gpt3 import COMPLETIONS_MODEL, SEPARATOR, _compute_or_load_doc_embeddings, count_tokens, separator_len
 from vectorstore import chromadb
 from os.path import sep
@@ -12,6 +15,7 @@ from os.path import sep
 
 class BaseDouaneAI():
     _api_key: str | None = None
+    _access_token: str | None = None
 
     PREFIX: str = ''
     BASE_COLLECTION = ""
@@ -55,6 +59,14 @@ class BaseDouaneAI():
     def api_key(self, api_key: str):
         self._api_key = api_key
         self.embedding_functions = OpenAIEmbeddingFunction(api_key)
+
+    @property
+    def access_token(self) -> str | None:
+        return self._access_token
+
+    @access_token.setter
+    def access_token(self, access_token: str):
+        self._access_token = access_token
 
     def load_embeddings(self, data: str, _df: pd.DataFrame | None = None):
         root = self.embeddings_path
@@ -188,6 +200,40 @@ class BaseDouaneAI():
                 return response
             else:
                 return response["choices"][0]["message"]["content"]
+        elif completor == "chat_gpt":
+            token = self.access_token
+
+            response = requests.post(
+                "https://chat.openai.com/backend-api/conversation",
+                stream=stream,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": stream and "text/event-stream" or "application/json",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "action": "next",
+                    "message": [
+                        {
+                            "id": uuid.uuid4().hex,
+                            "author": {
+                                "role": "user",
+                            },
+                            "content": {
+                                "content_type": "text",
+                                "parts": [prompt],
+                            },
+                        },
+                    ],
+                    "model": "text-davinci-002-render-sha",
+                    "parent_message_id": uuid.uuid4().hex,
+                },
+            )
+
+            # sse_client = SSEClient(response)
+            return response
+            # return sse_client.events()
+
         elif completor == "gpt4all":
             return ""
         return ""

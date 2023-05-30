@@ -1,6 +1,8 @@
 
+import json
 from sse_starlette import EventSourceResponse
 from fastapi.responses import PlainTextResponse
+
 
 def get_message(chunk) -> str:
     message: str = chunk if isinstance(chunk, str) else chunk['choices'][0]['delta'].get(
@@ -8,7 +10,22 @@ def get_message(chunk) -> str:
     return message.replace(" ", "\u00a0").replace("\n", "\u0085")
 
 
-def return_response(response, stream: bool = False, prompt_only: bool = False):
+def get_chat_gpt_message(chunk:  bytes) -> str:
+    bytes_str = chunk.decode("utf-8")
+    print(bytes_str)
+    try:
+        msg = json.loads(bytes_str)
+        message: str = msg['message']["content"]['parts'][0]
+        print(message)
+        return message.replace(" ", "\u00a0").replace("\n", "\u0085")
+    except:
+        return bytes_str
+
+
+def return_response(response, stream: bool = False, prompt_only: bool = False, completor=None):
+    if completor == "chat_gpt":
+        return EventSourceResponse(map(get_chat_gpt_message, response))
+
     if stream and not prompt_only:
         return EventSourceResponse(map(get_message, response))
     else:
