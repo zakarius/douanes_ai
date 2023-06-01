@@ -6,3 +6,4 @@ config/
 .vscode
 .vs
 update.py
+tmp/

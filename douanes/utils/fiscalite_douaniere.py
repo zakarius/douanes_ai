@@ -44,7 +44,7 @@ class FiscaliteDouaniere(BaseDouaneAI):
             _df = pd.read_json(df_path, orient="records")
         except:
             excel_data = pd.read_excel(
-                open(file_path[:-1]+".xlsx", "rb"), header=0, dtype=str, sheet_name=[data])[data]
+                open(file_path[:-1]+".xlsx", "rb"), engine='openpyxl', header=0, dtype=str, sheet_name=[data])[data]
             _df = pd.DataFrame(data=excel_data, dtype=str)
 
             if (data == "taxes"):

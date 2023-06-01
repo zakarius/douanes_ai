@@ -1,5 +1,6 @@
 import pandas as pd
 from .base_douanes_ai import BaseDouaneAI
+import openpyxl
 
 
 def valeur_content(row: pd.Series):
@@ -26,12 +27,12 @@ class FicheValeurs(BaseDouaneAI):
     VERSION: str | None = None
 
     def __init__(self):
-        self.pre_prompt = f"""Tu est un assistant douanier basé sur GPT3. Tu aides agents du service des douanes {self.DU_PAYS} à determiner la valeur des marchandies et à maintriser l'evaluation en douanes des marchandises, en utilisant tes connaissances profondes en matière d'avaluation des marchandises notamment: la definition de la valeur de bruxelle (la DVB) , l'accord sur la mise en oeuvre de l'article VII du GATT de l'OMC (l'Accord), les recommandations de l'OMD, la fiche des valeur connues à ta disposition, ....Tu repponds de facon précise, concise et complete, en evitant à tout prix de te repeter. Tu ne fabrique pas de reponse si la fiche des valeur et les textes ne le permettent pas. Si l'evaluation ne peut etre faite a partir de la fiche des valeur, tu utilise tes connaissance des textes cités precendemment pour recommander une ou deux methodes d'evaluation tout en expliquant en détails cette(ces) methode(s) et donnant des exemples d'evalution en utlisant cette(ces) methode(s)\n\n"""
+        self.pre_prompt = f"""Tu est un assistant douanier basé sur GPT3. Tu aides agents du service des douanes {self.DU_PAYS} à determiner à maitriser l'evaluation en douanes des marchandises, en utilisant tes connaissances profondes en matière d'avaluation des marchandises notamment: la definition de la valeur de bruxelle (la DVB) , l'accord sur la mise en oeuvre de l'article VII du GATT de l'OMC (l'Accord), les recommandations de l'OMD, la fiche des valeur de reference au {self.PAYS} versions {self.VERSION}, ....Tu aides à determiner la valeur des marchandies à partir de toutes ces connaissances.  Tu reponds de facon précise, concise et complete, en evitant à tout prix de te repeter. Tu ne fabriques pas de reponse si la fiche des valeurs de reference et les textes ne le permettent pas. Si l'evaluation ne peut etre faite a partir de la fiche des valeurs de reference, tu recommandes une ou deux methodes d'evaluation tout en expliquant en détails cette(ces) methode(s) et donnant des exemples d'evalution de la marchandise en question en utlisant cette(ces) methode(s)\n\n"""
 
         self.PREFIX = f"valeur_{self.PAYS}_{self.PREFIX}{('_'+ self.VERSION + '_') if self.VERSION is not None else '_'}"
 
         self.DONNEES_FICIVES = """
-        EXTRAIT DES VALEURS CONNUES
+        EXTRAIT DES VALEURS DE REFERENCE
         Marchandises | Position Tarifaire dans le Tarif Exterieur Commun de la CEDEAO| unité ou reference | ancienne valeur | nouvelle valeur
         * Pièce détachée vélo | 87141100900 8714920090 | Kg/TC X 20 / TC X40 | 700/2 500 000 / 3 500 000 DD | 700/2 500 000 / 3500 000 DD
         * Ustensiles de cuisine en série | |Carton|8000-12000|
@@ -54,8 +55,12 @@ class FicheValeurs(BaseDouaneAI):
         try:
             _df = pd.read_json(file_path+"_df.json", orient="records")
         except:
+
             excel_data = pd.read_excel(
-                open(file_path+".xlsx", "rb"), header=0,).values
+                open(file_path+".xlsx", "rb"),
+                header=0,
+                engine='openpyxl',
+            ).values
             _df = pd.DataFrame(columns=["marchandise", "position", "unite",
                                "ancienne_valeur", "nouvelle_valeur"], data=excel_data)
             _df = _df[~(_df[['position', 'unite', 'ancienne_valeur',

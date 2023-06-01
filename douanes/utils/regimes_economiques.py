@@ -1,6 +1,7 @@
+import openpyxl
 import pandas as pd
-
 from .base_douanes_ai import BaseDouaneAI
+
 
 def regime_content(row: pd.Series):
     regime = row["regime"]
@@ -17,19 +18,20 @@ def regime_content(row: pd.Series):
 
 
 class RegimeEconomique(BaseDouaneAI):
-
     BASE_COLLECTION = "codes"
     TEMPERATURE = 0
     SOURCE = "sydonia"
     SOURCE_NAME = "Sydonia"
     VERSION = "plus"
-    DONNEES_FICIVES = None    
+    DONNEES_FICIVES = None
     EXEMPLES_FICTIFS = None
-    PAYS : str  | None= None
-    DU_PAYS:  str  | None = ""
+    PAYS: str | None = None
+    DU_PAYS:  str | None = ""
 
     def __init__(self):
-        self.pre_prompt = f"""Tu est un assistant basé sur GPT3 qui reppond de facon précise, concise et complete aux questions des agents du service des douanes {self.DU_PAYS} relatives aux regimes économiques en vigueur {('au/en '+self.PAYS) if self.PAYS is not None else ''}. Tu te bases sur la liste des régimes et codes additionnels contenus dans {self.SOURCE_NAME}. Tu evites à tout prix de se repeter dans sa réponse et ne fabrique pas de reponse si la liste à ta disposition ne le permet pas. Tu precises les codes additionnels (si necessaire).\n\n
+        self.pre_prompt = f"""Tu est un assistant douanier basé sur GPT3 qui reppond de facon précise, concise et complete aux questions des agents du service des douanes {self.DU_PAYS} relatives aux regimes économiques en vigueur {('au/en '+self.PAYS) if self.PAYS is not None else ''}. Tu te bases sur la liste des régimes et codes additionnels contenus dans {self.SOURCE_NAME}. Tu evites à tout prix de se repeter dans sa réponse et ne fabrique pas de reponse si la liste à ta disposition ne le permet pas. Tu precises les codes additionnels (si necessaire).\n\n
+
+        Voici la liste des régimes et codes additionnels en vigueur {('au/en '+self.PAYS) if self.PAYS is not None else ''}:\n\n
         Régime etendu | Code additionnel | libéllés régime etendu | Libellés Code additionnel 
         """
         self.PREFIX = f"regimes_{self.SOURCE}{('_'+ self.VERSION + '_') if self.VERSION is not None else '_'}"
@@ -41,10 +43,14 @@ class RegimeEconomique(BaseDouaneAI):
             _df = pd.read_json(file_path+"_df.json", orient="records")
         except:
             excel_data = pd.read_excel(
-                open(file_path+".xlsx", "rb"), header=0, dtype=str).values
+                io=open(file_path+".xlsx", "rb"),
+                header=0,
+                engine='openpyxl',
+                dtype=str,
+            ).values
             _df = pd.DataFrame(columns=["regime", "code", "def_regime",
                                "def_code"], data=excel_data, dtype=str)
-            
+
             _df["content"] = _df.apply(regime_content, axis=1)
             _df = _df[['content']]
             _df.to_json(file_path+"_df.json", orient="records")
@@ -52,29 +58,29 @@ class RegimeEconomique(BaseDouaneAI):
         return _df
 
     def get_info(self,
-               question: str,
-               show_prompt: bool = False,
-               prompt_only: bool = False,
-               n_result: int = 10,
-               stream: bool = False,
-               completor: str = "open_ai",
-                use_gpt4: bool = False
-               ):
+                 question: str,
+                 show_prompt: bool = False,
+                 prompt_only: bool = False,
+                 n_result: int = 10,
+                 stream: bool = False,
+                 completor: str = "open_ai",
+                 use_gpt4: bool = False
+                 ):
         question = question.strip()
-        if(len(question.split(" ")) == 1):
-            if(len(question) > 4):
-                question = "Régime" +  question[:4] + " "+ question[4:]
+        if (len(question.split(" ")) == 1):
+            if (len(question) > 4):
+                question = "Régime" + question[:4] + " " + question[4:]
 
         return self.answer(
-            question = question,
-            show_prompt = show_prompt,
-            prompt_only = prompt_only,
-            n_result = n_result,
-            stream = stream,
-            completor = completor,
-            use_gpt4 = use_gpt4,
+            question=question,
+            show_prompt=show_prompt,
+            prompt_only=prompt_only,
+            n_result=n_result,
+            stream=stream,
+            completor=completor,
+            use_gpt4=use_gpt4,
         )
-    
+
 
 class RegimesSyndoniaWorld(RegimeEconomique):
     SOURCE_NAME = "SYDONIA World"

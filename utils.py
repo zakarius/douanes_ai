@@ -12,7 +12,6 @@ def get_message(chunk) -> str:
 
 def get_chat_gpt_message(chunk:  bytes) -> str:
     bytes_str = chunk.decode("utf-8")
-    print(bytes_str)
     try:
         msg = json.loads(bytes_str)
         message: str = msg['message']["content"]['parts'][0]
