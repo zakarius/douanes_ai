@@ -34,7 +34,9 @@ async def _answer_to_question(request: Request, req: DouanesRequest):
 
     api_key = ai_providers[completor] if (
         use_free or (api_key is None)) else api_key
-    assert api_key is not None and api_key.strip() != "", "La clé API est obligatoire"
+
+    if api_key is None or api_key.strip() == "":
+        return return_response("Erreur : La clé API est obligatoire", stream=False, prompt_only=False, completor=completor, status_code=403,)
 
     app = douanes_models[douanes_ai]
     app.api_key = api_key
