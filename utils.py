@@ -15,17 +15,16 @@ def get_chat_gpt_message(chunk:  bytes) -> str:
     try:
         msg = json.loads(bytes_str)
         message: str = msg['message']["content"]['parts'][0]
-        print(message)
         return message.replace(" ", "##SPACE##").replace("\n", "##LINE##")
     except:
         return bytes_str
 
 
-def return_response(response, stream: bool = False, prompt_only: bool = False, completor=None):
+def return_response(response, stream: bool = False, prompt_only: bool = False, completor=None, status_code: int = 200):
     if completor == "chat_gpt":
-        return EventSourceResponse(map(get_chat_gpt_message, response))
+        return EventSourceResponse(map(get_chat_gpt_message, response), status_code=status_code)
 
     if stream and not prompt_only:
-        return EventSourceResponse(map(get_message, response))
+        return EventSourceResponse(map(get_message, response), status_code=status_code)
     else:
-        return PlainTextResponse(response, media_type="text/plain")
+        return PlainTextResponse(response, media_type="text/plain", status_code=status_code)

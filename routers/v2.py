@@ -1,11 +1,14 @@
+import datetime
 from itertools import chain
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+
+from sqldata.database import Session, UserRequest
 from .shared import *
 
 router = APIRouter()
 
 
-async def _answer_to_question(req: DouanesRequest):
+async def _answer_to_question(request: Request, req: DouanesRequest):
     completor = req.completor.value
     douanes_ai = req.douanes_ai.value
     tec_collection = req.tec_collection.value
@@ -17,7 +20,20 @@ async def _answer_to_question(req: DouanesRequest):
     response_function = req.response_function
     api_key = req.api_key
 
-    api_key = ai_providers[completor] if api_key is None else api_key
+    use_free = request.headers.get("X-Use-Free", "false") == "true"
+    user_id = request.headers.get("X-User-Id", "anonymous")
+
+    session = Session()
+    if use_free:
+        today = datetime.date.today()
+        request_count = session.query(UserRequest).filter(
+            UserRequest.user_id == user_id, UserRequest.request_date >= today).count()
+
+        if request_count >= 10:
+            return return_response("Erreur : Vous avez atteint la limite de 10 requêtes par jour.", stream=False, prompt_only=False, completor=completor, status_code=403,)
+
+    api_key = ai_providers[completor] if (
+        use_free or (api_key is None)) else api_key
     assert api_key is not None and api_key.strip() != "", "La clé API est obligatoire"
 
     app = douanes_models[douanes_ai]
@@ -34,11 +50,24 @@ async def _answer_to_question(req: DouanesRequest):
     response = app.get_info(question, completor=completor, stream=stream, prompt_only=prompt_only,
                             use_gpt4=use_gpt4, n_result=n_result)
 
+    if use_free:
+        try:
+            user_request = UserRequest(
+                user_id=user_id,
+                question=question,
+                completor=completor,
+            )
+            session.add(user_request)
+            session.commit()
+        except:
+            session.rollback()
+
     return return_response(response, stream, prompt_only)
 
 
 @router.get("/answer")
 async def answer_to_question(
+    request: Request,
     question: str,
     completor: AIProviders = AIProviders.OPEN_AI,
     douanes_ai: DouanesModelsEnum = DouanesModelsEnum.CDN_TOGO_CEDEAO_2017,
@@ -50,6 +79,7 @@ async def answer_to_question(
     n_result: int = 5,
     response_function: ResponseFunction = ResponseFunction.ANSWER,
 ):
+
     if question.startswith("@/"):
         return await analyse_question(
             question=question.removeprefix("@/"),
@@ -57,7 +87,7 @@ async def answer_to_question(
             stream=stream,
         )
     else:
-        request = DouanesRequest(
+        req = DouanesRequest(
             question=question,
             completor=completor,
             douanes_ai=douanes_ai,
@@ -69,7 +99,7 @@ async def answer_to_question(
             n_result=n_result,
             response_function=response_function,
         )
-        return await _answer_to_question(request)
+        return await _answer_to_question(request, req)
 
 
 @router.get("/analyse")

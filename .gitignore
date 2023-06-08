@@ -7,3 +7,4 @@ config/
 .vs
 update.py
 tmp/
+.db
