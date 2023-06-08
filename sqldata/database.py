@@ -3,7 +3,6 @@ from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from sqlalchemy.exc import IntegrityError
 
 # Création de la base de données SQLite
 engine = create_engine('sqlite:///requetes_gratuites.db')

@@ -21,7 +21,7 @@ app.add_middleware(
 
 app.include_router(V3, prefix="/v3", tags=["v3"])
 app.include_router(V2, prefix="/v2", tags=["v2"])
-app.include_router(V1, prefix="", tags=["v1"], deprecated=True)
+app.include_router(V1, prefix="", tags=["v1"],)
 app.include_router(tools, prefix="/utils", tags=["Utils"])
 
 if __name__ == "__main__":

@@ -1,7 +1,9 @@
 
+import datetime
 import dotenv
 from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
+
+from sqldata.database import Session, UserRequest
 # Assistant classs
 from . import v2 as V2
 
@@ -10,7 +12,16 @@ DEFAULT_API_KEY = dotenv.get_key(".env", "OPENAI_API_KEY")
 router = APIRouter()
 
 
-@router.get("/regime/info")
+@router.get("/free_credit")
+def get_free_credit(user_id: str = "anonymous"):
+    session = Session()
+    today = datetime.date.today()
+    request_count = 10 - session.query(UserRequest).filter(
+        UserRequest.user_id == user_id, UserRequest.request_date >= today).count()
+    return request_count
+
+
+@router.get("/regime/info",  deprecated=True)
 async def get_info_from_regimes(request: Request, question: str, api_key: str = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False,   n_result: int = 15):
     return await V2.answer_to_question(
         request=request,
@@ -23,7 +34,7 @@ async def get_info_from_regimes(request: Request, question: str, api_key: str = 
     )
 
 
-@router.get("/valeur/info")
+@router.get("/valeur/info",  deprecated=True)
 async def get_info_from_fiche_valeurs(request: Request, question: str, api_key: str = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False,  n_result: int = 10):
     return await V2.answer_to_question(
         request=request,
@@ -36,7 +47,7 @@ async def get_info_from_fiche_valeurs(request: Request, question: str, api_key: 
     )
 
 
-@router.get("/valeur/cst")
+@router.get("/valeur/cst", deprecated=True)
 async def get_cst_code_infos(request: Request, question: str, api_key: str = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False,   n_result: int = 10):
     return await V2.answer_to_question(
         request=request,
@@ -49,7 +60,7 @@ async def get_cst_code_infos(request: Request, question: str, api_key: str = DEF
     )
 
 
-@router.get("/tec/info")
+@router.get("/tec/info", deprecated=True)
 async def get_tec_info(request: Request, query: str | None = None, question: str | None = None, api_key: str | None = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False, use_gpt4: bool = False):
     return await V2.answer_to_question(
         request=request,
@@ -62,7 +73,7 @@ async def get_tec_info(request: Request, query: str | None = None, question: str
     )
 
 
-@router.get("/cdn/answer")
+@router.get("/cdn/answer", deprecated=True)
 async def answer_to_question(request: Request, question: str, api_key: str | None = DEFAULT_API_KEY, stream: bool = False, prompt_only: bool = False, use_gpt4: bool = False):
     douanes_ai = V2.DouanesModelsEnum.CDN_TOGO_CEDEAO_2017
     tec_parts = question.split('@TEC:')
